@@ -40,4 +40,17 @@ export const logoutUser = async () => {
     }
 };
 
+import { signInAnonymously } from "firebase/auth";
+
+// 게스트 로그인 유틸리티
+export const signInGuest = async () => {
+    try {
+        const result = await signInAnonymously(auth);
+        return { success: true, user: result.user };
+    } catch (error) {
+        console.error("Guest Sign-in Error:", error);
+        return { success: false, error: error.message };
+    }
+};
+
 export { auth, onAuthStateChanged };
