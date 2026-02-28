@@ -23,8 +23,8 @@ export async function analyzeImageWithAI(imageUrl) {
 
         // Gemini SDK 초기화
         const genAI = new GoogleGenerativeAI(API_KEY);
-        // 제일 빠르고 멀티모달 인식에 뛰어난 가벼운 모델인 1.5-flash 사용
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+        // 빠르기보다 높은 판단력과 높은 추론 정확도가 중요한 1.5-pro 모델로 상향 조정
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
         const prompt = `
 당신은 물건 정리를 돕는 곤마리 스타일의 정리 요정 '스미스'의 스마트 시각 엔진입니다.
