@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { getDailyQuote, getMissions, getMissionProgress, getFarewellItems, getWishlistItems, getRankings, addMission, deleteMission } from '../utils/storage';
 import { getSmithReaction as getReaction } from '../utils/smithAI';
 import './Home.css';
 
 export default function Home() {
+    const navigate = useNavigate();
     const [quote, setQuote] = useState('');
     const [missions, setMissions] = useState([]);
     const [farewellItems, setFarewellItems] = useState([]);
@@ -150,7 +151,19 @@ export default function Home() {
             </section>
 
             {/* AI 카메라 버튼 */}
-            <Link to="/chat" className="camera-cta animate-scale-in" style={{ animationDelay: '0.2s' }}>
+            <div className="camera-cta animate-scale-in" style={{ animationDelay: '0.2s', cursor: 'pointer' }} onClick={() => document.getElementById('home-camera-upload').click()}>
+                <input
+                    type="file"
+                    id="home-camera-upload"
+                    accept="image/*"
+                    capture="environment"
+                    style={{ display: 'none' }}
+                    onChange={(e) => {
+                        if (e.target.files && e.target.files.length > 0) {
+                            navigate('/chat');
+                        }
+                    }}
+                />
                 <div className="camera-cta-inner">
                     <span className="camera-cta-icon">📸</span>
                     <div className="camera-cta-text">
@@ -159,7 +172,7 @@ export default function Home() {
                     </div>
                 </div>
                 <span className="camera-cta-arrow">→</span>
-            </Link>
+            </div>
 
             {/* 최근 피드 */}
             {recentItems.length > 0 && (
