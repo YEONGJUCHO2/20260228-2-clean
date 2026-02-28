@@ -42,15 +42,17 @@ export function updateItem(id, updates) {
 }
 
 export function deleteItem(id) {
-    const items = getItems().filter(i => i.id !== id);
+    const strId = String(id);
+    const items = getItems().filter(i => String(i.id) !== strId);
     localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(items));
 }
 
 export function deleteItems(ids) {
-    const idSet = new Set(ids);
-    const items = getItems().filter(i => !idSet.has(i.id));
+    const idSet = new Set(ids.map(id => String(id)));
+    const items = getItems().filter(i => !idSet.has(String(i.id)));
     localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(items));
 }
+
 
 export function getFarewellItems() {
     return getItems().filter(i => i.status === 'farewell');
