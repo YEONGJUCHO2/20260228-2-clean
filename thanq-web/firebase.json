@@ -12,5 +12,13 @@
         "destination": "/index.html"
       }
     ]
+  },
+  "auth": {
+    "providers": {
+      "googleSignIn": {
+        "oAuthBrandDisplayName": "ThanQ",
+        "supportEmail": "jyj29617@gmail.com"
+      }
+    }
   }
 }

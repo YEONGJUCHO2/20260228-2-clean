@@ -1,5 +1,7 @@
 import { useState, useRef } from 'react';
 import { getStats, getSettings, updateSettings, exportAllData, importData, resetAllData } from '../utils/storage';
+import { useAuth } from '../context/AuthContext';
+import { logoutUser } from '../utils/firebase';
 import './Settings.css';
 
 export default function Settings() {
@@ -10,6 +12,9 @@ export default function Settings() {
     const [showResetConfirm, setShowResetConfirm] = useState(false);
     const fileInputRef = useRef(null);
     const stats = getStats();
+
+    // Auth context
+    const { currentUser } = useAuth();
 
     const showToast = (msg) => {
         setToast(msg);
@@ -91,6 +96,13 @@ export default function Settings() {
         setTimeout(() => window.location.reload(), 1500);
     };
 
+    const handleLogout = async () => {
+        const result = await logoutUser();
+        if (!result.success) {
+            showToast('로그아웃에 실패했습니다.');
+        }
+    };
+
     const langLabel = { ko: '한국어', en: 'English', ja: '日本語' }[settings.language] || '한국어';
 
     return (
@@ -103,10 +115,15 @@ export default function Settings() {
             {/* 프로필 */}
             <div className="profile-card card animate-fade-in-up">
                 <div className="profile-avatar">
-                    <span>🐱</span>
+                    {currentUser?.photoURL ? (
+                        <img src={currentUser.photoURL} alt="profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                    ) : (
+                        <span>🐱</span>
+                    )}
                 </div>
                 <div className="profile-info">
-                    <p className="profile-name">ThanQ 사용자</p>
+                    <p className="profile-name">{currentUser?.displayName || 'ThanQ 사용자'}</p>
+                    <p className="profile-plan" style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{currentUser?.email}</p>
                     <p className="profile-plan">{isPro ? '🌟 ThanQ Pro 멤버' : '무료 플랜'}</p>
                 </div>
                 <div className="profile-stat">
@@ -300,6 +317,12 @@ export default function Settings() {
                     <button className="menu-item" onClick={() => showToast('⭐ 감사합니다! (앱스토어 연동 예정)')}>
                         <span>⭐</span>
                         <span className="menu-item-label">앱 평가하기</span>
+                        <span className="menu-arrow">›</span>
+                    </button>
+
+                    <button className="menu-item danger" onClick={handleLogout} style={{ marginTop: '10px' }}>
+                        <span>👋</span>
+                        <span className="menu-item-label">로그아웃</span>
                         <span className="menu-arrow">›</span>
                     </button>
                 </div>
