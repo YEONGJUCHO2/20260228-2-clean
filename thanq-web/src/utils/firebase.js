@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "firebase/auth";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from "firebase/auth";
 
 // Firebase configuration using environment variables from Vite
 const firebaseConfig = {
@@ -49,6 +49,76 @@ export const signInGuest = async () => {
         return { success: true, user: result.user };
     } catch (error) {
         console.error("Guest Sign-in Error:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+import {
+    OAuthProvider,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    RecaptchaVerifier,
+    signInWithPhoneNumber
+} from "firebase/auth";
+
+// 애플 로그인 유틸리티
+const appleProvider = new OAuthProvider('apple.com');
+export const signInWithApple = async () => {
+    try {
+        await signInWithRedirect(auth, appleProvider);
+        return { success: true };
+    } catch (error) {
+        console.error("Apple Sign-in Error:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+// 이메일 가입 및 로그인 유틸리티
+export const signUpWithEmail = async (email, password) => {
+    try {
+        const result = await createUserWithEmailAndPassword(auth, email, password);
+        return { success: true, user: result.user };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+export const signInWithEmailStore = async (email, password) => {
+    try {
+        const result = await signInWithEmailAndPassword(auth, email, password);
+        return { success: true, user: result.user };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+};
+
+// 전화번호 인증 유틸리티
+export const setupRecaptcha = (containerId) => {
+    if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, containerId, {
+            size: 'invisible'
+        });
+    }
+};
+
+export const requestPhoneOTP = async (phoneNumber) => {
+    try {
+        const appVerifier = window.recaptchaVerifier;
+        const confirmationResult = await signInWithPhoneNumber(auth, phoneNumber, appVerifier);
+        window.confirmationResult = confirmationResult;
+        return { success: true };
+    } catch (error) {
+        console.error("OTP Request Error:", error);
+        return { success: false, error: error.message };
+    }
+};
+
+export const verifyPhoneOTP = async (code) => {
+    try {
+        const result = await window.confirmationResult.confirm(code);
+        return { success: true, user: result.user };
+    } catch (error) {
+        console.error("OTP Verify Error:", error);
         return { success: false, error: error.message };
     }
 };

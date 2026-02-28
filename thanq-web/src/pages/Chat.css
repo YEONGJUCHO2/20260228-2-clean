@@ -330,19 +330,90 @@
     opacity: 0.5;
 }
 
-.skip-btn {
-    display: block;
-    width: 100%;
-    text-align: center;
-    padding: 10px;
-    background: none;
-    color: var(--text-muted);
-    font-size: 13px;
-    font-weight: 500;
+/* 직접 입력 영역 */
+.chat-input-bar {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
 }
 
-.skip-btn:hover {
-    color: var(--text-secondary);
+.chat-input-wrapper {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 2px solid var(--beige);
+    border-radius: 16px;
+    padding: 4px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+}
+
+.chat-input-wrapper:focus-within {
+    border-color: var(--coral);
+}
+
+.chat-text-input {
+    flex: 1;
+    padding: 12px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.chat-text-input::placeholder {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.chat-send-btn {
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--beige);
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: default;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.chat-send-btn.active {
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(232, 131, 107, 0.3);
+}
+
+.chat-send-btn.active:hover {
+    transform: scale(1.05);
+}
+
+/* 지금 결정할래 버튼 (인라인) */
+.skip-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: rgba(123, 167, 204, 0.1);
+    color: var(--soft-blue);
+    border: 1.5px solid rgba(123, 167, 204, 0.3);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-end;
+}
+
+.skip-btn-inline:hover {
+    background: rgba(123, 167, 204, 0.2);
+    border-color: var(--soft-blue);
+    transform: translateY(-1px);
 }
 
 /* 결정 버튼 */

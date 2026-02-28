@@ -10,6 +10,7 @@
 
   /* Accent Colors */
   --coral: #E8836B;
+  --primary-color: var(--coral);
   --coral-light: #F4A698;
   --coral-dark: #D4614A;
   --cream: #FFF8F0;

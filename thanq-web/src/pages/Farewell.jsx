@@ -60,13 +60,17 @@ export default function Farewell() {
 
             {/* 물건 카드 */}
             <div className={`farewell-item-card ${phase >= 1 ? 'dissolving' : ''}`}>
-                <div className="farewell-item-icon">
-                    {item.category === 'clothing' ? '👕' :
-                        item.category === 'books' ? '📚' :
-                            item.category === 'electronics' ? '📱' :
-                                item.category === 'accessories' ? '🧸' :
-                                    item.category === 'memories' ? '💌' :
-                                        item.category === 'kitchen' ? '🍳' : '📦'}
+                <div className="farewell-item-icon" style={item.imageData ? { padding: 0, overflow: 'hidden' } : {}}>
+                    {item.imageData ? (
+                        <img src={item.imageData} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '20px' }} />
+                    ) : (
+                        item.category === 'clothing' ? '👕' :
+                            item.category === 'books' ? '📚' :
+                                item.category === 'electronics' ? '📱' :
+                                    item.category === 'accessories' ? '🧸' :
+                                        item.category === 'memories' ? '💌' :
+                                            item.category === 'kitchen' ? '🍳' : '📦'
+                    )}
                 </div>
                 <p className="farewell-item-name">{item.name}</p>
             </div>
@@ -77,11 +81,8 @@ export default function Farewell() {
                 <p className="farewell-sub">{item.farewellMessage}</p>
             </div>
 
-            {/* 스미스 */}
-            <div className={`farewell-smith ${phase >= 2 ? 'visible' : ''}`}>
-                <span className="smith-farewell-face">🥲</span>
-                <span className="smith-wave">👋</span>
-            </div>
+
+
 
             {/* 완료 버튼 */}
             <div className={`farewell-actions ${phase >= 3 ? 'visible' : ''}`}>

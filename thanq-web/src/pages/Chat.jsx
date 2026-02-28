@@ -1,19 +1,22 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { createConversation, getNextResponse, processChoice, getDecisionSuggestion, getFarewellMessage } from '../utils/smithAI';
-import { addItem, CATEGORIES, guessCategory } from '../utils/storage';
+import { createConversation, getNextResponseAsync, getNextResponse, processChoice, getDecisionSuggestion, getFarewellMessage } from '../utils/smithAI';
+import { checkApiLimit, incrementApiUsage, addItem, CATEGORIES, guessCategory } from '../utils/storage';
 import { analyzeImageWithAI } from '../utils/visionAI'; // 추가
+import { useAuth } from '../context/AuthContext';
 import './Chat.css';
 
 export default function Chat() {
     const navigate = useNavigate();
     const location = useLocation();
+    const { currentUser } = useAuth();
 
     // location.state에 imageCaptured가 있으면 분석 단계부터 시작
     const [step, setStep] = useState(location.state?.imageCaptured ? 'analyzing' : 'input'); // input | analyzing | chatting | deciding
     const [itemName, setItemName] = useState('');
     const [itemCategory, setItemCategory] = useState('other');
     const [autoGuessed, setAutoGuessed] = useState(false);
+    const [capturedImageData, setCapturedImageData] = useState(null); // base64 사진 저장용
     const [conversation, setConversation] = useState(null);
     const [currentResponse, setCurrentResponse] = useState(null);
     const [chatHistory, setChatHistory] = useState([]);
@@ -31,14 +34,46 @@ export default function Chat() {
                     return;
                 }
 
-                // AI 분석 호출 (Gemini 1.5 Flash Vision)
+                // API 사용량 체크
+                const limitCheck = checkApiLimit(currentUser);
+                if (!limitCheck.allowed) {
+                    alert(limitCheck.reason);
+                    setStep('input');
+                    return;
+                }
+
+                // AI 분석 호출 (Gemini 2.0 Flash Vision)
                 const aiResult = await analyzeImageWithAI(location.state.imageUrl);
+                incrementApiUsage(currentUser);
+
+                // blob URL을 base64 data URL로 변환하여 저장 (페이지 이동 후에도 사진 유지)
+                try {
+                    const imgEl = new Image();
+                    await new Promise((resolve, reject) => {
+                        imgEl.onload = resolve;
+                        imgEl.onerror = reject;
+                        imgEl.src = location.state.imageUrl;
+                    });
+                    const cvs = document.createElement('canvas');
+                    const MAX = 400;
+                    let w = imgEl.width, h = imgEl.height;
+                    if (w > h) { if (w > MAX) { h *= MAX / w; w = MAX; } }
+                    else { if (h > MAX) { w *= MAX / h; h = MAX; } }
+                    cvs.width = w; cvs.height = h;
+                    cvs.getContext('2d').drawImage(imgEl, 0, 0, w, h);
+                    setCapturedImageData(cvs.toDataURL('image/jpeg', 0.6));
+                } catch (e) {
+                    console.warn('이미지 base64 변환 실패:', e);
+                }
 
                 if (aiResult.success) {
                     const detectedName = aiResult.itemName;
-                    // API에서 준 카테고리가 앱의 카테고리(clothing, electronics 등)에 맞는지 매핑, 아니면 guessCategory 폴백
-                    const detectedCat = ['clothes', 'electronics', 'books', 'memory', 'other'].includes(aiResult.category)
-                        ? aiResult.category : guessCategory(detectedName);
+                    // API에서 준 카테고리를 앱의 카테고리 ID로 정규화
+                    const categoryMap = {
+                        clothes: 'clothing', memory: 'memories',
+                        electronics: 'electronics', books: 'books', other: 'other',
+                    };
+                    const detectedCat = categoryMap[aiResult.category] || guessCategory(detectedName);
 
                     setItemName(detectedName);
                     setItemCategory(detectedCat);
@@ -72,9 +107,10 @@ export default function Chat() {
                     }, 1000);
                 } else {
                     if (aiResult.error === "GEMINI_API_KEY_MISSING") {
-                        alert("API 키가 환경 변수(.env.local의 VITE_GEMINI_API_KEY)에 설정되지 않았습니다.\n(데모를 위해 수동 입력 모드로 전환합니다)");
+                        alert("API 키가 환경 변수에 설정되지 않았습니다.\n(데모를 위해 수동 입력 모드로 전환합니다)");
                     } else {
                         console.error('Vision API Error:', aiResult.error);
+                        alert(`사진 인식 실패: ${aiResult.error}\n(직접 입력 모드로 전환합니다)`);
                     }
                     setStep('input');
                 }
@@ -90,45 +126,51 @@ export default function Chat() {
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     };
 
-    const startChat = () => {
+    const startChat = async () => {
         if (!itemName.trim()) return;
         const conv = createConversation(itemName.trim(), itemCategory);
         setConversation(conv);
         setStep('chatting');
 
-        // 첫 메시지
+        // 첫 인사
         setIsTyping(true);
-        setTimeout(() => {
-            const response = getNextResponse(conv);
-            setCurrentResponse(response);
-            setChatHistory([{
-                type: 'smith',
-                message: `${itemName}이(가) 보이는구나! 한번 이야기해볼까?`,
-            }]);
-            setIsTyping(false);
-            scrollToBottom();
+        setChatHistory([{
+            type: 'smith',
+            message: `${itemName}이(가) 보이는구나! 한번 이야기해볼까?`,
+        }]);
+        scrollToBottom();
 
-            // 첫 질문
+        // AI 첫 질문 생성 대기
+        const response = await getNextResponseAsync(conv);
+
+        setIsTyping(false);
+        setCurrentResponse(response);
+        setTimeout(() => {
+            setIsTyping(true);
             setTimeout(() => {
-                setIsTyping(true);
-                setTimeout(() => {
-                    setChatHistory(prev => [...prev, { type: 'smith', message: response.mascot_message }]);
-                    setIsTyping(false);
-                    scrollToBottom();
-                }, 800);
-            }, 500);
-        }, 1000);
+                setChatHistory(prev => [...prev, { type: 'smith', message: response.mascot_message }]);
+                setIsTyping(false);
+                scrollToBottom();
+            }, 800);
+        }, 500);
     };
 
-    const processNextTurn = (choiceIndex, userTextObj) => {
+    const processNextTurn = async (choiceIndex, userTextObj) => {
+        let choiceText = '';
+        let providedScore = undefined;
+
         if (userTextObj) {
             setChatHistory(prev => [...prev, userTextObj]);
+            choiceText = userTextObj.message;
+            // 직접 입력 텍스트의 경우 점수는 중립(0)으로 처리하거나 나중에 API에서 점수를 매기게 할 수도 있음
+            providedScore = 0;
         } else {
-            const choiceText = currentResponse.choices[choiceIndex];
+            choiceText = currentResponse.choices[choiceIndex];
+            providedScore = currentResponse.scores ? currentResponse.scores[choiceIndex] : undefined;
             setChatHistory(prev => [...prev, { type: 'user', message: choiceText }]);
         }
 
-        const updated = processChoice({ ...conversation }, choiceIndex);
+        const updated = processChoice({ ...conversation }, choiceIndex, providedScore);
         setConversation(updated);
         scrollToBottom();
 
@@ -156,14 +198,15 @@ export default function Chat() {
 
         // 다음 질문
         setIsTyping(true);
-        setTimeout(() => {
-            const nextResponse = getNextResponse(updated);
-            setCurrentResponse(nextResponse);
-            setChatHistory(prev => [...prev, { type: 'smith', message: nextResponse.mascot_message }]);
-            setIsTyping(false);
-            setSelectedChoice(null);
-            scrollToBottom();
-        }, 1200);
+
+        // AI가 다음 질문을 고민하는 중 (API 호출)
+        const nextResponse = await getNextResponseAsync(updated, choiceText);
+
+        setCurrentResponse(nextResponse);
+        setChatHistory(prev => [...prev, { type: 'smith', message: nextResponse.mascot_message }]);
+        setIsTyping(false);
+        setSelectedChoice(null);
+        scrollToBottom();
     };
 
     const handleChoice = (choiceIndex) => {
@@ -181,11 +224,20 @@ export default function Chat() {
     };
 
     const handleDecision = (decision) => {
+        // 대화 내용 요약 (최대 5개 메시지)
+        const chatSummary = chatHistory
+            .filter(msg => msg.type === 'smith')
+            .slice(-3)
+            .map(msg => msg.message)
+            .join(' | ');
+
         const item = {
             name: itemName,
             category: itemCategory,
             status: decision, // 'farewell' | 'wishlist'
             farewellMessage: decision === 'farewell' ? getFarewellMessage(itemName) : null,
+            imageData: capturedImageData || null, // 실제 사진 저장
+            chatSummary: chatSummary || null, // AI 대화 요약
         };
         addItem(item);
 
@@ -299,7 +351,11 @@ export default function Chat() {
             {/* 아이템 헤더 */}
             <div className="chat-item-header animate-fade-in">
                 <div className="chat-item-icon">
-                    {CATEGORIES.find(c => c.id === itemCategory)?.icon || '📦'}
+                    {capturedImageData ? (
+                        <img src={capturedImageData} alt={itemName} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '12px' }} />
+                    ) : (
+                        CATEGORIES.find(c => c.id === itemCategory)?.icon || '📦'
+                    )}
                 </div>
                 <div>
                     <p className="chat-item-name">{itemName}</p>
@@ -347,39 +403,30 @@ export default function Chat() {
                         ))}
                     </div>
 
-                    {/* 직접 텍스트 입력 기능 */}
-                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-                        <input
-                            type="text"
-                            placeholder="직접 입력할 수도 있어요..."
-                            value={userInput}
-                            onChange={(e) => setUserInput(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleTextInput()}
-                            disabled={selectedChoice !== null}
-                            style={{
-                                flex: 1, padding: '12px 16px', borderRadius: '12px',
-                                border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)',
-                                color: 'var(--text-color)', outline: 'none'
-                            }}
-                        />
-                        <button
-                            onClick={handleTextInput}
-                            disabled={!userInput.trim() || selectedChoice !== null}
-                            style={{
-                                padding: '12px 20px', borderRadius: '12px', border: 'none',
-                                backgroundColor: userInput.trim() ? 'var(--primary-color)' : 'var(--border-color)',
-                                color: userInput.trim() ? '#fff' : 'var(--text-muted)',
-                                fontWeight: 'bold', cursor: userInput.trim() ? 'pointer' : 'default',
-                                transition: 'all 0.2s'
-                            }}
-                        >
-                            전송
+                    {/* 직접 텍스트 입력 영역 */}
+                    <div className="chat-input-bar">
+                        <div className="chat-input-wrapper">
+                            <input
+                                type="text"
+                                className="chat-text-input"
+                                placeholder="✏️ 직접 입력해보세요..."
+                                value={userInput}
+                                onChange={(e) => setUserInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && handleTextInput()}
+                                disabled={selectedChoice !== null}
+                            />
+                            <button
+                                className={`chat-send-btn ${userInput.trim() ? 'active' : ''}`}
+                                onClick={handleTextInput}
+                                disabled={!userInput.trim() || selectedChoice !== null}
+                            >
+                                전송
+                            </button>
+                        </div>
+                        <button className="skip-btn-inline" onClick={() => { setStep('deciding'); }}>
+                            ⚡ 지금 결정할래
                         </button>
                     </div>
-
-                    <button className="skip-btn" onClick={() => { handleDecision('wishlist'); }} style={{ marginTop: '16px' }}>
-                        그냥 지금 결정할래
-                    </button>
                 </div>
             )}
 

@@ -8,6 +8,7 @@ const STORAGE_KEYS = {
     QUOTES_INDEX: 'thanq_quote_idx',
     THEME_UNLOCKS: 'thanq_themes',
     USER: 'thanq_user',
+    API_LIMITS: 'thanq_api_limits',
 };
 
 // === 아이템 관리 ===
@@ -40,6 +41,17 @@ export function updateItem(id, updates) {
     return items[idx];
 }
 
+export function deleteItem(id) {
+    const items = getItems().filter(i => i.id !== id);
+    localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(items));
+}
+
+export function deleteItems(ids) {
+    const idSet = new Set(ids);
+    const items = getItems().filter(i => !idSet.has(i.id));
+    localStorage.setItem(STORAGE_KEYS.ITEMS, JSON.stringify(items));
+}
+
 export function getFarewellItems() {
     return getItems().filter(i => i.status === 'farewell');
 }
@@ -62,14 +74,14 @@ export function getMissions() {
     return DEFAULT_MISSIONS;
 }
 
-export function addMission(title, target, category) {
+export function addMission(title, target, category, source) {
     const missions = getMissions();
     const newMission = {
         id: 'u_' + Date.now(),
         title,
         target: parseInt(target) || 1,
         category: category || '전체',
-        source: 'user',
+        source: source || 'user',
     };
     missions.push(newMission);
     localStorage.setItem(STORAGE_KEYS.MISSIONS, JSON.stringify(missions));
@@ -320,6 +332,52 @@ export function guessCategory(itemName) {
         }
     }
     return bestMatch;
+}
+
+// === API 사용량 제한 ===
+export function checkApiLimit(user) {
+    if (!user) return { allowed: false, reason: "로그인이 필요합니다." };
+    const limits = JSON.parse(localStorage.getItem(STORAGE_KEYS.API_LIMITS) || '{}');
+    const uid = user.uid;
+    const today = new Date().toDateString();
+
+    if (!limits[uid]) {
+        limits[uid] = { guest_total: 0, last_date: today, daily_count: 0 };
+    }
+
+    if (user.isAnonymous) {
+        if (limits[uid].guest_total >= 999) return { allowed: false, reason: "게스트 체험 횟수를 모두 사용했습니다. 로그인 후 계속 이용해 보세요!" };
+        return { allowed: true };
+    } else {
+        if (limits[uid].last_date !== today) {
+            limits[uid].last_date = today;
+            limits[uid].daily_count = 0;
+        }
+        if (limits[uid].daily_count >= 10) return { allowed: false, reason: "오늘의 무료 분석 횟수(10회)를 모두 사용했습니다. 내일 다시 시도해주세요!" };
+        return { allowed: true };
+    }
+}
+
+export function incrementApiUsage(user) {
+    if (!user) return;
+    const limits = JSON.parse(localStorage.getItem(STORAGE_KEYS.API_LIMITS) || '{}');
+    const uid = user.uid;
+    const today = new Date().toDateString();
+
+    if (!limits[uid]) {
+        limits[uid] = { guest_total: 0, last_date: today, daily_count: 0 };
+    }
+
+    if (user.isAnonymous) {
+        limits[uid].guest_total += 1;
+    } else {
+        if (limits[uid].last_date !== today) {
+            limits[uid].last_date = today;
+            limits[uid].daily_count = 0;
+        }
+        limits[uid].daily_count += 1;
+    }
+    localStorage.setItem(STORAGE_KEYS.API_LIMITS, JSON.stringify(limits));
 }
 
 // === Mock 랭킹 데이터 ===

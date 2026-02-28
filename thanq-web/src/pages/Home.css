@@ -2,30 +2,175 @@
     padding-top: 12px;
 }
 
-/* 명언 배너 */
-.quote-banner {
+/* 상단 헤더 (앱 제목, 로그인/로그아웃) */
+.home-top-header {
     display: flex;
-    align-items: flex-start;
-    gap: 10px;
-    padding: 14px 16px;
-    background: linear-gradient(135deg, var(--cream) 0%, var(--beige) 100%);
-    border-radius: var(--radius-lg);
+    align-items: center;
+    justify-content: space-between;
     margin-bottom: var(--space-lg);
-    border: 1px solid rgba(212, 168, 83, 0.15);
+    padding: 0 4px;
 }
 
-.quote-icon {
-    font-size: 18px;
-    flex-shrink: 0;
-    margin-top: 2px;
+.home-app-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--primary-color);
+    letter-spacing: -0.5px;
+    margin: 0;
+    flex: 1;
+    text-align: center;
 }
 
-.quote-text {
+.header-auth-btn {
+    border: none;
+    border-radius: var(--radius-full);
+    padding: 6px 14px;
     font-size: 13px;
-    line-height: 1.6;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.header-auth-btn.login {
+    background-color: var(--coral-light);
+    color: white;
+}
+
+.header-auth-btn.logout {
+    background-color: var(--bg-secondary);
     color: var(--text-secondary);
-    font-weight: 400;
-    font-style: italic;
+}
+
+.header-auth-btn:active {
+    transform: scale(0.96);
+}
+
+/* 알림 벨 */
+.notif-bell-btn {
+    position: relative;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+    padding: 4px;
+    transition: transform 0.2s;
+}
+
+.notif-bell-btn:active {
+    transform: scale(0.9);
+}
+
+.notif-badge {
+    position: absolute;
+    top: -2px;
+    right: -4px;
+    background: #e74c3c;
+    color: white;
+    font-size: 10px;
+    font-weight: 800;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* 알림 오버레이 */
+.notif-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    z-index: 999;
+}
+
+/* 알림 패널 */
+.notif-panel {
+    position: fixed;
+    top: 60px;
+    right: 16px;
+    left: 16px;
+    max-width: 400px;
+    margin-left: auto;
+    background: var(--bg-card);
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    overflow: hidden;
+    max-height: 400px;
+}
+
+.notif-panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+    border-bottom: 1px solid var(--beige);
+}
+
+.notif-panel-title {
+    font-size: 17px;
+    font-weight: 800;
+    margin: 0;
+}
+
+.notif-read-all {
+    background: none;
+    border: none;
+    color: var(--coral);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.notif-empty {
+    padding: 40px 20px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.notif-list {
+    max-height: 320px;
+    overflow-y: auto;
+}
+
+.notif-item {
+    padding: 14px 20px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.notif-item:hover {
+    background: var(--bg-secondary);
+}
+
+.notif-item.unread {
+    background: rgba(232, 131, 107, 0.06);
+    border-left: 3px solid var(--coral);
+}
+
+.notif-msg {
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+    margin-bottom: 4px;
+}
+
+.notif-item.unread .notif-msg {
+    font-weight: 600;
+}
+
+.notif-time {
+    font-size: 11px;
+    color: var(--text-muted);
 }
 
 /* 스미스 인사 */
@@ -52,24 +197,6 @@
     justify-content: center;
     flex-shrink: 0;
     animation: float 4s ease-in-out infinite;
-}
-
-.smith-face {
-    font-size: 32px;
-}
-
-.smith-goggles {
-    position: absolute;
-    top: -4px;
-    right: -4px;
-    font-size: 14px;
-    background: var(--gold);
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .smith-bubble {

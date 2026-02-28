@@ -1,117 +1,265 @@
-import { useState, useEffect } from 'react';
-import { getFarewellItems, getWishlistItems, getBadges, getAllBadgeDefs } from '../utils/storage';
+import { useState, useEffect, useRef } from 'react';
+import { getFarewellItems, getWishlistItems, getBadges, getAllBadgeDefs, deleteItems } from '../utils/storage';
 import './Archive.css';
+
+const CATEGORY_NAMES = {
+    'electronics': '전자기기', 'clothing': '의류', 'clothes': '의류',
+    'books': '책', 'accessories': '소품', 'memories': '추억', 'memory': '추억',
+    'kitchen': '주방용품', 'other': '기타',
+};
+
+const getCategoryIcon = (cat) => {
+    const icons = { clothing: '👕', clothes: '👕', books: '📚', electronics: '📱', accessories: '🧸', memories: '💌', memory: '💌', kitchen: '🍳' };
+    return icons[cat] || '📦';
+};
+
+const getCustomBadgeIcon = (id, defaultIcon) => {
+    if (id === 'first_farewell') return '👣'; // 첫걸음
+    if (id === 'farewell_master') return '✨'; // 비움의 마스터
+    if (id === 'earth_friend') return '🌱'; // 지구의 친구
+    return defaultIcon;
+};
+
+const getCatName = (cat) => CATEGORY_NAMES[cat] || cat;
 
 export default function Archive() {
     const [tab, setTab] = useState('archive');
     const [farewellItems, setFarewellItems] = useState([]);
     const [wishlistItems, setWishlistItems] = useState([]);
     const [badges, setBadges] = useState([]);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [selectMode, setSelectMode] = useState(false);
+    const [selectedIds, setSelectedIds] = useState(new Set());
+    const longPressTimer = useRef(null);
     const allBadges = getAllBadgeDefs();
 
-    useEffect(() => {
+    const refreshItems = () => {
         setFarewellItems(getFarewellItems());
         setWishlistItems(getWishlistItems());
         setBadges(getBadges());
-    }, []);
+    };
+
+    useEffect(() => { refreshItems(); }, []);
 
     const formatDate = (dateStr) => {
         const d = new Date(dateStr);
         return `${d.getFullYear()}.${String(d.getMonth() + 1).padStart(2, '0')}.${String(d.getDate()).padStart(2, '0')}`;
     };
 
+    const handlePressStart = (item) => {
+        longPressTimer.current = setTimeout(() => {
+            setSelectMode(true);
+            setSelectedIds(new Set([item.id]));
+        }, 600);
+    };
+
+    const handlePressEnd = () => {
+        if (longPressTimer.current) clearTimeout(longPressTimer.current);
+    };
+
+    const handleItemClick = (item) => {
+        if (selectMode) {
+            const newSet = new Set(selectedIds);
+            if (newSet.has(item.id)) newSet.delete(item.id);
+            else newSet.add(item.id);
+            setSelectedIds(newSet);
+            if (newSet.size === 0) setSelectMode(false);
+        } else {
+            setSelectedItem(item);
+        }
+    };
+
+    const handleDeleteSelected = () => {
+        if (selectedIds.size === 0) return;
+        if (window.confirm(`${selectedIds.size}개 항목을 삭제할까요?`)) {
+            deleteItems([...selectedIds]);
+            refreshItems();
+            setSelectMode(false);
+            setSelectedIds(new Set());
+        }
+    };
+
+    const cancelSelectMode = () => {
+        setSelectMode(false);
+        setSelectedIds(new Set());
+    };
+
+    const currentItems = tab === 'archive' ? farewellItems : wishlistItems;
+
     return (
         <div className="page archive-page">
-            <h1 className="page-title animate-fade-in">📦 보관함</h1>
+            <header className="archive-header animate-fade-in">
+                <button className="header-icon-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                </button>
+                <h1 className="page-title">나의 기록</h1>
+                <button className="header-icon-btn">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                </button>
+            </header>
 
             {/* 탭 */}
-            <div className="tab-bar animate-fade-in">
-                <button className={`tab-btn ${tab === 'archive' ? 'active' : ''}`} onClick={() => setTab('archive')}>
-                    추억 보관함 <span className="tab-count">{farewellItems.length}</span>
+            <div className="archive-tab-bar animate-fade-in">
+                <button className={`archive-tab ${tab === 'archive' ? 'active' : ''}`} onClick={() => { setTab('archive'); cancelSelectMode(); }}>
+                    보관함
+                    {tab === 'archive' && <span className="tab-dot"></span>}
                 </button>
-                <button className={`tab-btn ${tab === 'wishlist' ? 'active' : ''}`} onClick={() => setTab('wishlist')}>
-                    위시리스트 <span className="tab-count">{wishlistItems.length}</span>
-                </button>
-                <button className={`tab-btn ${tab === 'badges' ? 'active' : ''}`} onClick={() => setTab('badges')}>
-                    뱃지
+                <button className={`archive-tab ${tab === 'wishlist' ? 'active' : ''}`} onClick={() => { setTab('wishlist'); cancelSelectMode(); }}>
+                    위시리스트
+                    {tab === 'wishlist' && <span className="tab-dot"></span>}
                 </button>
             </div>
 
-            {/* 추억 보관함 */}
-            {tab === 'archive' && (
-                <div className="archive-list animate-fade-in-up">
-                    {farewellItems.length === 0 ? (
-                        <div className="empty-state">
-                            <span className="empty-icon">📭</span>
-                            <p>아직 보내준 물건이 없어요</p>
-                            <p className="empty-sub">스미스와 대화를 시작해보세요!</p>
-                        </div>
-                    ) : (
-                        farewellItems.map((item, i) => (
-                            <div key={item.id} className="archive-card card" style={{ animationDelay: `${i * 0.05}s` }}>
-                                <div className="archive-thumb">
-                                    {item.category === 'clothing' ? '👕' :
-                                        item.category === 'books' ? '📚' :
-                                            item.category === 'electronics' ? '📱' :
-                                                item.category === 'accessories' ? '🧸' :
-                                                    item.category === 'memories' ? '💌' :
-                                                        item.category === 'kitchen' ? '🍳' : '📦'}
-                                </div>
-                                <div className="archive-info">
-                                    <p className="archive-name">{item.name}</p>
-                                    <p className="archive-date">{formatDate(item.createdAt)}</p>
-                                    {item.farewellMessage && (
-                                        <p className="archive-farewell">"{item.farewellMessage}"</p>
-                                    )}
-                                </div>
-                                <span className="archive-theme">✨</span>
-                            </div>
-                        ))
-                    )}
+            {/* 요약 텍스트 (스티치 스타일) */}
+            {(tab === 'archive' || tab === 'wishlist') && (
+                <div className="archive-summary-text animate-fade-in-up">
+                    {tab === 'archive'
+                        ? <>지금까지 <strong>{farewellItems.length}개</strong>의 물건과<br /><strong>작별했어요</strong></>
+                        : <>현재 <strong>{wishlistItems.length}개</strong>의 물건을<br /><strong>고민하고 있어요</strong></>
+                    }
                 </div>
             )}
 
-            {/* 위시리스트 */}
-            {tab === 'wishlist' && (
-                <div className="archive-list animate-fade-in-up">
-                    {wishlistItems.length === 0 ? (
-                        <div className="empty-state">
-                            <span className="empty-icon">💭</span>
-                            <p>보류 중인 물건이 없어요</p>
-                            <p className="empty-sub">고민되는 물건은 여기서 관리해요</p>
-                        </div>
-                    ) : (
-                        wishlistItems.map((item, i) => (
-                            <div key={item.id} className="archive-card card wishlist-card" style={{ animationDelay: `${i * 0.05}s` }}>
-                                <div className="archive-thumb wishlist-thumb">
-                                    {item.category === 'clothing' ? '👕' :
-                                        item.category === 'books' ? '📚' : '📦'}
-                                </div>
-                                <div className="archive-info">
-                                    <p className="archive-name">{item.name}</p>
-                                    <p className="archive-date">{formatDate(item.createdAt)}</p>
-                                    <p className="wishlist-hint">🐱 스미스가 나중에 다시 물어볼 거예요</p>
-                                </div>
-                                <span className="wishlist-icon">📌</span>
-                            </div>
-                        ))
-                    )}
+            {/* 다중 선택 모드 바 */}
+            {selectMode && (
+                <div className="select-mode-bar animate-fade-in">
+                    <button className="select-cancel-btn" onClick={cancelSelectMode}>✕ 취소</button>
+                    <span className="select-count">{selectedIds.size}개 선택</span>
+                    <button className="select-delete-btn" onClick={handleDeleteSelected}>🗑️ 삭제</button>
                 </div>
             )}
 
-            {/* 뱃지 */}
-            {tab === 'badges' && (
-                <div className="badges-grid animate-fade-in-up">
-                    {allBadges.map(badge => {
+            {/* 뱃지 가로 목록 */}
+            {(tab === 'archive' || tab === 'wishlist') && (
+                <div className="badges-row animate-fade-in-up">
+                    {allBadges.slice(0, 4).map((badge, idx) => {
                         const earned = badges.includes(badge.id);
+                        const colors = ['bg-orange', 'bg-yellow', 'bg-green', 'bg-gray'];
+                        const colorClass = earned ? colors[idx % 4] : 'bg-gray';
+                        const displayIcon = getCustomBadgeIcon(badge.id, badge.icon);
                         return (
-                            <div key={badge.id} className={`badge-card ${earned ? 'earned' : 'locked'}`}>
-                                <span className="badge-icon">{earned ? badge.icon : '🔒'}</span>
-                                <p className="badge-name">{badge.name}</p>
-                                {earned && <span className="badge-check">✅</span>}
+                            <div key={badge.id} className={`badge-mini ${earned ? 'earned' : 'locked'}`}>
+                                <span className={`badge-mini-icon ${colorClass}`}>{earned ? displayIcon : '🔒'}</span>
+                                <span className="badge-mini-name">{badge.name}</span>
                             </div>
                         );
                     })}
+                </div>
+            )}
+
+            {/* 포토 그리드 (폴라로이드 스타일) */}
+            {(tab === 'archive' || tab === 'wishlist') && (
+                <div className="photo-grid animate-fade-in-up">
+                    {currentItems.length === 0 ? (
+                        <div className="empty-state">
+                            <span className="empty-icon">{tab === 'archive' ? '📭' : '💭'}</span>
+                            <p>{tab === 'archive' ? '아직 보내준 물건이 없어요' : '보류 중인 물건이 없어요'}</p>
+                            <p className="empty-sub">{tab === 'archive' ? '스미스와 대화를 시작해보세요!' : '고민되는 물건은 여기서 관리해요'}</p>
+                        </div>
+                    ) : (
+                        <>
+                            {!selectMode && currentItems.length > 0 && (
+                                <p className="long-press-hint">💡 꾹 눌러서 다중 선택</p>
+                            )}
+                            <div className="photo-grid-inner">
+                                {currentItems.map((item, i) => (
+                                    <div
+                                        key={item.id}
+                                        className={`photo-card ${selectMode && selectedIds.has(item.id) ? 'selected-card' : ''}`}
+                                        style={{ animationDelay: `${i * 0.05}s` }}
+                                        onClick={() => handleItemClick(item)}
+                                        onMouseDown={() => handlePressStart(item)}
+                                        onMouseUp={handlePressEnd}
+                                        onMouseLeave={handlePressEnd}
+                                        onTouchStart={() => handlePressStart(item)}
+                                        onTouchEnd={handlePressEnd}
+                                    >
+                                        {selectMode && (
+                                            <div className="select-check-badge">
+                                                {selectedIds.has(item.id) ? '✅' : '⬜'}
+                                            </div>
+                                        )}
+
+                                        <div className="photo-card-img-wrapper">
+                                            <div className="photo-card-img">
+                                                {item.imageData ? (
+                                                    <img src={item.imageData} alt={item.name} />
+                                                ) : (
+                                                    <div className="photo-card-emoji">
+                                                        <span>{getCategoryIcon(item.category)}</span>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <span className="photo-card-cat-badge">
+                                                {getCategoryIcon(item.category)}
+                                            </span>
+                                        </div>
+
+                                        <div className="photo-card-info">
+                                            <span className="photo-card-date">{formatDate(item.createdAt)}</span>
+                                            <p className="photo-card-name">{item.name}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </>
+                    )}
+                </div>
+            )}
+
+            {/* 상세 카드 모달 */}
+            {selectedItem && (
+                <div className="detail-overlay" onClick={() => setSelectedItem(null)}>
+                    <div className="detail-card animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+                        <button className="detail-close" onClick={() => setSelectedItem(null)}>✕</button>
+
+                        {selectedItem.imageData ? (
+                            <div className="detail-photo">
+                                <img src={selectedItem.imageData} alt={selectedItem.name} />
+                            </div>
+                        ) : (
+                            <div className="detail-photo detail-photo-emoji">
+                                <span>{getCategoryIcon(selectedItem.category)}</span>
+                            </div>
+                        )}
+
+                        <div className="detail-info">
+                            <h2 className="detail-name">{selectedItem.name}</h2>
+                            <div className="detail-meta">
+                                <span className="detail-tag">{getCatName(selectedItem.category)}</span>
+                                <span className="detail-date">{formatDate(selectedItem.createdAt)}</span>
+                                <span className={`detail-status ${selectedItem.status}`}>
+                                    {selectedItem.status === 'farewell' ? '👋 보내줌' : '📌 보류 중'}
+                                </span>
+                            </div>
+
+                            {selectedItem.farewellMessage && (
+                                <div className="detail-section-box">
+                                    <p className="detail-section-label">💌 작별 메시지</p>
+                                    <p className="detail-farewell-msg">"{selectedItem.farewellMessage}"</p>
+                                </div>
+                            )}
+
+                            {selectedItem.chatSummary && (
+                                <div className="detail-section-box">
+                                    <p className="detail-section-label">🐱 스미스와의 대화</p>
+                                    {selectedItem.chatSummary.split(' | ').map((msg, i) => (
+                                        <p key={i} className="detail-chat-msg">"{msg}"</p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        <button className="detail-delete-btn" onClick={() => {
+                            if (window.confirm('정말 삭제할까요?')) {
+                                deleteItems([selectedItem.id]);
+                                setSelectedItem(null);
+                                refreshItems();
+                            }
+                        }}>
+                            🗑️ 삭제하기
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
