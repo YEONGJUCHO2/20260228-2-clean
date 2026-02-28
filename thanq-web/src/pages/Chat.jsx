@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createConversation, getNextResponse, processChoice, getDecisionSuggestion, getFarewellMessage } from '../utils/smithAI';
 import { addItem, CATEGORIES, guessCategory } from '../utils/storage';
+import { analyzeImageWithAI } from '../utils/visionAI'; // 추가
 import './Chat.css';
 
 export default function Chat() {
@@ -21,14 +22,23 @@ export default function Chat() {
     const [userInput, setUserInput] = useState('');
     const chatEndRef = useRef(null);
 
-    // AI 이미지 분석 시뮬레이션
+    // AI 이미지 분석 시뮬레이션 -> 진짜 Vision API 연동
     useEffect(() => {
         if (step === 'analyzing') {
-            const timer = setTimeout(() => {
-                const isSuccess = Math.random() < 0.8;
-                if (isSuccess) {
-                    const detectedName = location.state?.mockName || '마우스';
-                    const detectedCat = guessCategory(detectedName);
+            const processImage = async () => {
+                if (!location.state?.imageUrl) {
+                    setStep('input');
+                    return;
+                }
+
+                // AI 분석 호출 (Gemini 1.5 Flash Vision)
+                const aiResult = await analyzeImageWithAI(location.state.imageUrl);
+
+                if (aiResult.success) {
+                    const detectedName = aiResult.itemName;
+                    // API에서 준 카테고리가 앱의 카테고리(clothing, electronics 등)에 맞는지 매핑, 아니면 guessCategory 폴백
+                    const detectedCat = ['clothes', 'electronics', 'books', 'memory', 'other'].includes(aiResult.category)
+                        ? aiResult.category : guessCategory(detectedName);
 
                     setItemName(detectedName);
                     setItemCategory(detectedCat);
@@ -61,10 +71,18 @@ export default function Chat() {
                         }, 500);
                     }, 1000);
                 } else {
+                    if (aiResult.error === "GEMINI_API_KEY_MISSING") {
+                        alert("API 키가 환경 변수(.env.local의 VITE_GEMINI_API_KEY)에 설정되지 않았습니다.\n(데모를 위해 수동 입력 모드로 전환합니다)");
+                    } else {
+                        console.error('Vision API Error:', aiResult.error);
+                    }
                     setStep('input');
                 }
-            }, 2500); // 2.5초 지연
-            return () => clearTimeout(timer);
+            };
+
+            // UX 향상을 위해 최소 2.5초는 로딩 애니메이션 보장 (빠르게 결과가 와도 깜빡임 방지)
+            const minWait = new Promise(resolve => setTimeout(resolve, 2500));
+            Promise.all([processImage(), minWait]);
         }
     }, [step, location.state]);
 
