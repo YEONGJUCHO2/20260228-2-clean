@@ -18,6 +18,7 @@ export default function Chat() {
     const [chatHistory, setChatHistory] = useState([]);
     const [isTyping, setIsTyping] = useState(false);
     const [selectedChoice, setSelectedChoice] = useState(null);
+    const [userInput, setUserInput] = useState('');
     const chatEndRef = useRef(null);
 
     // AI 이미지 분석 시뮬레이션
@@ -101,12 +102,13 @@ export default function Chat() {
         }, 1000);
     };
 
-    const handleChoice = (choiceIndex) => {
-        if (selectedChoice !== null) return;
-        setSelectedChoice(choiceIndex);
-
-        const choiceText = currentResponse.choices[choiceIndex];
-        setChatHistory(prev => [...prev, { type: 'user', message: choiceText }]);
+    const processNextTurn = (choiceIndex, userTextObj) => {
+        if (userTextObj) {
+            setChatHistory(prev => [...prev, userTextObj]);
+        } else {
+            const choiceText = currentResponse.choices[choiceIndex];
+            setChatHistory(prev => [...prev, { type: 'user', message: choiceText }]);
+        }
 
         const updated = processChoice({ ...conversation }, choiceIndex);
         setConversation(updated);
@@ -144,6 +146,20 @@ export default function Chat() {
             setSelectedChoice(null);
             scrollToBottom();
         }, 1200);
+    };
+
+    const handleChoice = (choiceIndex) => {
+        if (selectedChoice !== null || isTyping) return;
+        setSelectedChoice(choiceIndex);
+        processNextTurn(choiceIndex, null);
+    };
+
+    const handleTextInput = () => {
+        if (!userInput.trim() || isTyping) return;
+        const textToProcess = userInput.trim();
+        setUserInput('');
+        setSelectedChoice(-1); // To disable text/choices
+        processNextTurn(-1, { type: 'user', message: textToProcess });
     };
 
     const handleDecision = (decision) => {
@@ -297,7 +313,7 @@ export default function Chat() {
                 <div ref={chatEndRef} />
             </div>
 
-            {/* 선택지 카드 */}
+            {/* 선택지 및 텍스트 력 */}
             {step === 'chatting' && currentResponse && !currentResponse.decided && !isTyping && (
                 <div className="choices-container animate-fade-in-up">
                     <div className="choices-grid">
@@ -312,7 +328,38 @@ export default function Chat() {
                             </button>
                         ))}
                     </div>
-                    <button className="skip-btn" onClick={() => { handleDecision('wishlist'); }}>
+
+                    {/* 직접 텍스트 입력 기능 */}
+                    <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+                        <input
+                            type="text"
+                            placeholder="직접 입력할 수도 있어요..."
+                            value={userInput}
+                            onChange={(e) => setUserInput(e.target.value)}
+                            onKeyDown={(e) => e.key === 'Enter' && handleTextInput()}
+                            disabled={selectedChoice !== null}
+                            style={{
+                                flex: 1, padding: '12px 16px', borderRadius: '12px',
+                                border: '1px solid var(--border-color)', backgroundColor: 'var(--bg-color)',
+                                color: 'var(--text-color)', outline: 'none'
+                            }}
+                        />
+                        <button
+                            onClick={handleTextInput}
+                            disabled={!userInput.trim() || selectedChoice !== null}
+                            style={{
+                                padding: '12px 20px', borderRadius: '12px', border: 'none',
+                                backgroundColor: userInput.trim() ? 'var(--primary-color)' : 'var(--border-color)',
+                                color: userInput.trim() ? '#fff' : 'var(--text-muted)',
+                                fontWeight: 'bold', cursor: userInput.trim() ? 'pointer' : 'default',
+                                transition: 'all 0.2s'
+                            }}
+                        >
+                            전송
+                        </button>
+                    </div>
+
+                    <button className="skip-btn" onClick={() => { handleDecision('wishlist'); }} style={{ marginTop: '16px' }}>
                         그냥 지금 결정할래
                     </button>
                 </div>
