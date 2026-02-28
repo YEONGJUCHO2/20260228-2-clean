@@ -1,0 +1,274 @@
+.stats-page {
+    padding-top: 20px;
+}
+
+/* 요약 카드 */
+.stats-summary {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr 1fr;
+    gap: 10px;
+    margin-bottom: var(--space-lg);
+}
+
+.stat-box {
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    padding: 18px 14px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+}
+
+.stat-box.main {
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+}
+
+.stat-box.main .stat-num {
+    color: white;
+    font-size: 32px;
+}
+
+.stat-box.main .stat-label {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.stat-num {
+    display: block;
+    font-size: 26px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1.2;
+}
+
+.stat-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+/* 스미스 리액션 */
+.smith-reaction {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: var(--space-lg);
+    border-left: 4px solid var(--coral);
+}
+
+.reaction-face {
+    font-size: 40px;
+}
+
+.reaction-msg {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.reaction-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* 카테고리 차트 */
+.category-chart {
+    padding: 20px;
+}
+
+.pie-visual {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.pie-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.pie-label {
+    font-size: 13px;
+    font-weight: 600;
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.pie-bar-track {
+    flex: 1;
+    height: 20px;
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.pie-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    animation: barGrow 0.8s ease-out both;
+}
+
+@keyframes barGrow {
+    from {
+        width: 0 !important;
+    }
+}
+
+.pie-percent {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    width: 36px;
+    text-align: right;
+}
+
+.chart-summary {
+    font-size: 13px;
+    color: var(--text-secondary);
+    text-align: center;
+    padding-top: 10px;
+    border-top: 1px solid var(--bg-secondary);
+}
+
+.no-data {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 14px;
+    padding: 20px 0;
+}
+
+/* 미션 카드 */
+.mission-stat-card {
+    margin-bottom: 10px;
+    padding: 16px;
+}
+
+.mission-stat-card.done {
+    border-left: 4px solid var(--teal);
+}
+
+.mission-stat-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+.mission-complete {
+    font-size: 12px;
+    color: var(--teal);
+    font-weight: 700;
+}
+
+/* 테마 컬렉션 */
+.themes-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.theme-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 14px 8px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: transform 0.2s;
+}
+
+.theme-card:hover {
+    transform: translateY(-2px);
+}
+
+.theme-card.locked {
+    opacity: 0.4;
+    filter: grayscale(0.6);
+}
+
+.theme-card.unlocked {
+    border: 2px solid var(--gold);
+}
+
+.theme-card.premium {
+    border: 2px dashed var(--coral-light);
+}
+
+.theme-icon {
+    font-size: 28px;
+}
+
+.theme-name {
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.theme-req {
+    font-size: 9px;
+    color: var(--text-muted);
+}
+
+.premium-tag {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    font-size: 8px;
+    font-weight: 800;
+    color: white;
+    background: var(--coral);
+    padding: 1px 4px;
+    border-radius: 4px;
+}
+
+/* 랭킹 */
+.ranking-section {
+    padding: 4px 16px;
+}
+
+.ranking-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bg-secondary);
+}
+
+.ranking-row:last-child {
+    border-bottom: none;
+}
+
+.ranking-row.is-me {
+    background: rgba(232, 131, 107, 0.06);
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+}
+
+.rank-medal {
+    font-size: 18px;
+    width: 30px;
+    text-align: center;
+}
+
+.rank-avatar {
+    font-size: 22px;
+}
+
+.rank-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.rank-score {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--coral);
+}

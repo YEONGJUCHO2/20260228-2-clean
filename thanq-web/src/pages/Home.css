@@ -1,0 +1,494 @@
+.home-page {
+    padding-top: 12px;
+}
+
+/* 명언 배너 */
+.quote-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 14px 16px;
+    background: linear-gradient(135deg, var(--cream) 0%, var(--beige) 100%);
+    border-radius: var(--radius-lg);
+    margin-bottom: var(--space-lg);
+    border: 1px solid rgba(212, 168, 83, 0.15);
+}
+
+.quote-icon {
+    font-size: 18px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.quote-text {
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text-secondary);
+    font-weight: 400;
+    font-style: italic;
+}
+
+/* 스미스 인사 */
+.smith-greeting {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    background: var(--bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-md);
+    margin-bottom: var(--space-lg);
+    border: 1px solid rgba(232, 131, 107, 0.1);
+}
+
+.smith-avatar-home {
+    position: relative;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #FFE0B2 0%, #FFCC80 100%);
+    border-radius: var(--radius-full);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    animation: float 4s ease-in-out infinite;
+}
+
+.smith-face {
+    font-size: 32px;
+}
+
+.smith-goggles {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    font-size: 14px;
+    background: var(--gold);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.smith-bubble {
+    flex: 1;
+}
+
+.smith-name {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--coral);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 2px;
+}
+
+.smith-message {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.smith-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 4px;
+}
+
+.smith-sub strong {
+    color: var(--coral);
+}
+
+/* 섹션 */
+.section {
+    margin-bottom: var(--space-lg);
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-md);
+}
+
+/* 섹션 헤더 */
+.section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+
+.section-header .section-title {
+    margin-bottom: 0;
+}
+
+.add-mission-toggle {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--coral);
+    background: rgba(232, 131, 107, 0.1);
+    border: none;
+    padding: 5px 12px;
+    border-radius: 20px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-mission-toggle:hover {
+    background: rgba(232, 131, 107, 0.2);
+}
+
+/* 미션 추가 폼 */
+.mission-add-form {
+    padding: 14px;
+    margin-bottom: 10px;
+}
+
+.mission-add-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1.5px solid var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 13px;
+    font-family: inherit;
+    background: var(--bg-primary);
+    outline: none;
+    margin-bottom: 10px;
+    transition: border-color 0.2s;
+    box-sizing: border-box;
+}
+
+.mission-add-input:focus {
+    border-color: var(--coral);
+}
+
+.mission-add-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+}
+
+.mission-add-field {
+    flex: 1;
+}
+
+.mission-add-field label {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.mission-add-num,
+.mission-add-select {
+    width: 100%;
+    padding: 7px 10px;
+    border: 1.5px solid var(--bg-secondary);
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-family: inherit;
+    background: var(--bg-primary);
+    outline: none;
+    box-sizing: border-box;
+}
+
+.mission-add-btn {
+    padding: 7px 16px;
+    background: var(--coral);
+    color: white;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: opacity 0.2s;
+}
+
+.mission-add-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
+/* 미션 리스트 (줄글 형태) */
+.mission-list {
+    padding: 4px 0;
+}
+
+.mission-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+    transition: background 0.2s;
+}
+
+.mission-row:last-child {
+    border-bottom: none;
+}
+
+.mission-row:hover {
+    background: rgba(232, 131, 107, 0.03);
+}
+
+.mission-row.done {
+    opacity: 0.6;
+}
+
+.mission-row-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+}
+
+.mission-check {
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.mission-row-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.mission-row-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.mission-row.done .mission-row-title {
+    text-decoration: line-through;
+}
+
+.mission-row-meta {
+    font-size: 10px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+.mission-row-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+.mission-row-progress {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.progress-bar-sm {
+    width: 50px;
+    height: 4px;
+    background: var(--bg-secondary);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill-sm {
+    height: 100%;
+    background: linear-gradient(90deg, var(--coral-light), var(--coral));
+    border-radius: 2px;
+    transition: width 0.6s ease;
+}
+
+.mission-row-count {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 500;
+    min-width: 28px;
+    text-align: right;
+}
+
+.mission-delete-btn {
+    width: 22px;
+    height: 22px;
+    border: none;
+    background: rgba(220, 80, 60, 0.08);
+    color: #dc503c;
+    border-radius: 50%;
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.mission-delete-btn:hover {
+    background: rgba(220, 80, 60, 0.18);
+}
+
+.mission-empty {
+    padding: 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+/* AI 카메라 CTA */
+.camera-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    background: linear-gradient(135deg, var(--coral) 0%, #D4614A 100%);
+    border-radius: var(--radius-xl);
+    margin-bottom: var(--space-lg);
+    box-shadow: var(--shadow-glow);
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.camera-cta:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 40px rgba(232, 131, 107, 0.4);
+}
+
+.camera-cta-inner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.camera-cta-icon {
+    font-size: 32px;
+}
+
+.camera-cta-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: white;
+}
+
+.camera-cta-sub {
+    font-size: 11px;
+    color: rgba(255, 255, 255, 0.8);
+    margin-top: 2px;
+}
+
+.camera-cta-arrow {
+    font-size: 20px;
+    color: white;
+    font-weight: 300;
+}
+
+/* 최근 피드 */
+.feed-scroll {
+    display: flex;
+    gap: 10px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.feed-item {
+    min-width: 100px;
+    background: var(--bg-card);
+    border-radius: var(--radius-md);
+    padding: 12px;
+    text-align: center;
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s;
+}
+
+.feed-item:hover {
+    transform: scale(1.03);
+}
+
+.feed-thumb {
+    width: 50px;
+    height: 50px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    margin: 0 auto 8px;
+}
+
+.feed-name {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.feed-badge {
+    font-size: 9px;
+    font-weight: 700;
+    padding: 2px 6px;
+    border-radius: 6px;
+}
+
+.feed-badge.farewell {
+    background: rgba(232, 131, 107, 0.15);
+    color: var(--coral);
+}
+
+.feed-badge.wishlist {
+    background: rgba(123, 167, 204, 0.15);
+    color: var(--soft-blue);
+}
+
+/* 랭킹 */
+.ranking-list {
+    padding: 4px 16px;
+}
+
+.ranking-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--bg-secondary);
+}
+
+.ranking-row:last-child {
+    border-bottom: none;
+}
+
+.ranking-row.is-me {
+    background: rgba(232, 131, 107, 0.06);
+    margin: 0 -16px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+}
+
+.rank-num {
+    font-size: 18px;
+    width: 30px;
+    text-align: center;
+}
+
+.rank-avatar {
+    font-size: 22px;
+}
+
+.rank-name {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.rank-count {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--coral);
+}
