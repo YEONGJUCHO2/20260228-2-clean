@@ -1,12 +1,15 @@
-import { useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useRef, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { createConversation, getNextResponse, processChoice, getDecisionSuggestion, getFarewellMessage } from '../utils/smithAI';
 import { addItem, CATEGORIES, guessCategory } from '../utils/storage';
 import './Chat.css';
 
 export default function Chat() {
     const navigate = useNavigate();
-    const [step, setStep] = useState('input'); // input | chatting | deciding
+    const location = useLocation();
+
+    // location.state에 imageCaptured가 있으면 분석 단계부터 시작
+    const [step, setStep] = useState(location.state?.imageCaptured ? 'analyzing' : 'input'); // input | analyzing | chatting | deciding
     const [itemName, setItemName] = useState('');
     const [itemCategory, setItemCategory] = useState('other');
     const [autoGuessed, setAutoGuessed] = useState(false);
@@ -16,6 +19,53 @@ export default function Chat() {
     const [isTyping, setIsTyping] = useState(false);
     const [selectedChoice, setSelectedChoice] = useState(null);
     const chatEndRef = useRef(null);
+
+    // AI 이미지 분석 시뮬레이션
+    useEffect(() => {
+        if (step === 'analyzing') {
+            const timer = setTimeout(() => {
+                const isSuccess = Math.random() < 0.8;
+                if (isSuccess) {
+                    const detectedName = location.state?.mockName || '마우스';
+                    const detectedCat = guessCategory(detectedName);
+
+                    setItemName(detectedName);
+                    setItemCategory(detectedCat);
+                    setAutoGuessed(true);
+
+                    // 자동으로 대화 시작
+                    const conv = createConversation(detectedName, detectedCat);
+                    setConversation(conv);
+                    setStep('chatting');
+
+                    setIsTyping(true);
+                    setTimeout(() => {
+                        const response = getNextResponse(conv);
+                        setCurrentResponse(response);
+                        setChatHistory([{
+                            type: 'smith',
+                            message: `사진을 분석해보니 ${detectedName} 같아! 한번 이야기해볼까?`,
+                        }]);
+                        setIsTyping(false);
+                        scrollToBottom();
+
+                        // 첫 질문
+                        setTimeout(() => {
+                            setIsTyping(true);
+                            setTimeout(() => {
+                                setChatHistory(prev => [...prev, { type: 'smith', message: response.mascot_message }]);
+                                setIsTyping(false);
+                                scrollToBottom();
+                            }, 800);
+                        }, 500);
+                    }, 1000);
+                } else {
+                    setStep('input');
+                }
+            }, 2500); // 2.5초 지연
+            return () => clearTimeout(timer);
+        }
+    }, [step, location.state]);
 
     const scrollToBottom = () => {
         setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
@@ -112,6 +162,32 @@ export default function Chat() {
         }
     };
 
+    // === 분석 중 화면 ===
+    if (step === 'analyzing') {
+        return (
+            <div className="page chat-page" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <div className="scanning-container animate-fade-in" style={{ textAlign: 'center' }}>
+                    <div className="animate-pulse" style={{ fontSize: '4rem', marginBottom: '20px' }}>👁️</div>
+                    <h2 style={{ fontSize: '1.2rem', marginBottom: '10px', color: 'var(--text-color)' }}>스미스가 사진을 분석하고 있어요...</h2>
+                    <p style={{ color: 'var(--text-muted)' }}>잠시만 기다려주세요</p>
+                    {location.state?.imageUrl && (
+                        <div style={{ marginTop: '30px', width: '160px', height: '160px', borderRadius: '20px', overflow: 'hidden', border: '3px solid var(--primary-color)', margin: '30px auto 0', opacity: 0.8, position: 'relative' }}>
+                            <img src={location.state.imageUrl} alt="captured" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <div className="scan-line" style={{ position: 'absolute', top: 0, left: 0, right: 0, height: '4px', background: 'var(--primary-color)', boxShadow: '0 0 8px var(--primary-color)', animation: 'scan 2s infinite linear' }}></div>
+                            <style>{`
+                               @keyframes scan {
+                                   0% { top: 0; }
+                                   50% { top: 100%; }
+                                   100% { top: 0; }
+                               }
+                           `}</style>
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
     // === 물건 입력 화면 ===
     if (step === 'input') {
         return (
@@ -127,6 +203,11 @@ export default function Chat() {
                     </div>
 
                     <div className="input-card card">
+                        {location.state?.imageCaptured && !itemName && (
+                            <div style={{ backgroundColor: '#fee2e2', color: '#dc2626', padding: '12px', borderRadius: '8px', marginBottom: '16px', fontSize: '0.9rem', textAlign: 'center', fontWeight: 'bold' }}>
+                                🤖 사진 인식에 실패했어요. 직접 입력해주세요!
+                            </div>
+                        )}
                         <label className="input-label">물건 이름</label>
                         <input
                             type="text"

@@ -160,7 +160,11 @@ export default function Home() {
                     style={{ display: 'none' }}
                     onChange={(e) => {
                         if (e.target.files && e.target.files.length > 0) {
-                            navigate('/chat');
+                            const file = e.target.files[0];
+                            const imageUrl = URL.createObjectURL(file);
+                            const mockNames = ['검은색 마우스', '노트북 충전기', '두꺼운 전공서적', '사용감 있는 텀블러', '파란색 머그컵', '낡은 지갑'];
+                            const randomName = mockNames[Math.floor(Math.random() * mockNames.length)];
+                            navigate('/chat', { state: { imageCaptured: true, imageUrl, mockName: randomName } });
                         }
                     }}
                 />
