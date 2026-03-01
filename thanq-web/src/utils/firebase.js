@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, signOut, onAuthStateChanged } from "firebase/auth";
+import { getFirestore } from "firebase/firestore";
 
 // Firebase configuration using environment variables from Vite
 const firebaseConfig = {
@@ -17,6 +18,9 @@ const app = initializeApp(firebaseConfig);
 // Initialize Firebase Auth and get a reference to the service
 const auth = getAuth(app);
 const googleProvider = new GoogleAuthProvider();
+
+// Initialize Firestore
+const db = getFirestore(app);
 
 // Google 로그인 유틸리티
 export const signInWithGoogle = async () => {
@@ -123,4 +127,4 @@ export const verifyPhoneOTP = async (code) => {
     }
 };
 
-export { auth, onAuthStateChanged };
+export { auth, onAuthStateChanged, db };

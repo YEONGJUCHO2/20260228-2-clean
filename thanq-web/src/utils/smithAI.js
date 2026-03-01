@@ -189,3 +189,87 @@ export function getFarewellMessage(itemName) {
     ];
     return messages[Math.floor(Math.random() * messages.length)];
 }
+
+// ===== 주간 스미스 리포트 생성 =====
+export async function generateWeeklyReport(items) {
+    // 이번 주 (월~일) 아이템 필터링
+    const now = new Date();
+    const dayOfWeek = now.getDay(); // 0=일, 1=월 ...
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+
+    const thisWeekItems = items.filter(item => {
+        if (!item.createdAt) return false;
+        return new Date(item.createdAt) >= monday;
+    });
+
+    const farewellItems = thisWeekItems.filter(i => i.status === 'farewell');
+    const wishlistItems = thisWeekItems.filter(i => i.status === 'wishlist');
+    const totalSent = farewellItems.length;
+
+    // 카테고리 집계
+    const catCount = {};
+    farewellItems.forEach(i => {
+        const c = i.category || 'other';
+        catCount[c] = (catCount[c] || 0) + 1;
+    });
+    const topCat = Object.entries(catCount).sort((a, b) => b[1] - a[1])[0];
+
+    // 데이터가 없으면 기본 메시지
+    if (totalSent === 0 && wishlistItems.length === 0) {
+        return {
+            totalSent: 0,
+            wishlistCount: wishlistItems.length,
+            topCategory: null,
+            aiComment: '이번 주는 아직 조용했네! 작은 것 하나부터 시작해볼까? 🐱',
+            emoji: '🌱',
+            weekStart: monday.toISOString().slice(0, 10),
+        };
+    }
+
+    // Gemini AI 코멘트 생성 시도
+    let aiComment = '';
+    try {
+        const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+        if (!apiKey) throw new Error('No API Key');
+
+        const genAI = new GoogleGenerativeAI(apiKey);
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+
+        const itemNames = farewellItems.slice(0, 5).map(i => i.name).join(', ');
+        const prompt = `당신은 '스미스'라는 친근하고 따뜻한 스팀펑크 고양이 요정입니다.
+사용자가 이번 주에 ${totalSent}개의 물건(${itemNames || '여러 가지'})을 작별했습니다.
+위시리스트에는 ${wishlistItems.length}개가 있어요.
+${topCat ? `가장 많이 정리한 카테고리는 '${topCat[0]}'입니다.` : ''}
+
+스미스의 말투로 이번 주 정리 활동에 대한 감성적이고 따뜻한 한 줄 코멘트를 작성해주세요.
+조건: 30자 이내, 이모지 1개 사용, 한국어, 정리를 격려하는 내용`;
+
+        const result = await Promise.race([
+            model.generateContent(prompt),
+            new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 8000))
+        ]);
+        aiComment = result.response.text().trim().replace(/^["']|["']$/g, '');
+    } catch (e) {
+        // 폴백 메시지 목록
+        const fallbacks = [
+            `이번 주 ${totalSent}개나 작별했어! 정말 대단해 🌟`,
+            `물건들한테도 새 출발이 생겼겠지? 잘했어 ✨`,
+            `조금씩 가벼워지는 거 느껴지지? 계속 함께해! 🐱`,
+            `${totalSent}개의 작별, 그만큼 공간이 생겼어 💫`,
+        ];
+        aiComment = fallbacks[Math.floor(Math.random() * fallbacks.length)];
+    }
+
+    return {
+        totalSent,
+        wishlistCount: wishlistItems.length,
+        topCategory: topCat ? topCat[0] : null,
+        topCategoryCount: topCat ? topCat[1] : 0,
+        aiComment,
+        emoji: totalSent >= 5 ? '🏆' : totalSent >= 3 ? '🌟' : totalSent >= 1 ? '✨' : '🌱',
+        weekStart: monday.toISOString().slice(0, 10),
+    };
+}
+

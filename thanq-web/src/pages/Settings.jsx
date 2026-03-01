@@ -1,25 +1,102 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { getStats, getSettings, updateSettings, exportAllData, importData, resetAllData } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
-import { logoutUser } from '../utils/firebase';
+import { logoutUser, db } from '../utils/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 import './Settings.css';
 
 export default function Settings() {
-    const [isPro, setIsPro] = useState(false);
+    const [isPro, setIsPro] = useState(() => JSON.parse(localStorage.getItem('thanq_settings') || '{}').isPro || false);
+    const [planType, setPlanType] = useState('monthly'); // 'monthly' | 'annual'
     const [settings, setSettings] = useState(getSettings());
     const [toast, setToast] = useState('');
     const [showHelp, setShowHelp] = useState(false);
     const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [paypalLoaded, setPaypalLoaded] = useState(false);
+    const [paypalError, setPaypalError] = useState(false);
     const fileInputRef = useRef(null);
+    const paypalBtnRef = useRef(null);
     const stats = getStats();
-
-    // Auth context
     const { currentUser } = useAuth();
+
+    // PayPal Live 설정
+    const PAYPAL_CLIENT_ID = 'AeehIL4XSLMOMO9da5Plo-Y7CfwJTdzvuvbrYJc01GvtM_kZEGPcxPJ5HQ2BXFv-qf-s9rWPvELRE6SH';
+    const PLAN_IDS = {
+        monthly: 'P-5X789781L2920905ANGSB3YY',
+        annual: 'P-2PJ08834P8666533GNGSB3YY',
+    };
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(''), 2500);
     };
+
+    // PayPal SDK 로드 + 버튼 렌더
+    useEffect(() => {
+        if (isPro) return;
+        let rendered = false;
+
+        const loadAndRender = () => {
+            if (!window.paypal || rendered) return;
+            rendered = true;
+            if (paypalBtnRef.current) paypalBtnRef.current.innerHTML = '';
+
+            try {
+                window.paypal.Buttons({
+                    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'subscribe' },
+                    createSubscription: (data, actions) => {
+                        return actions.subscription.create({ plan_id: PLAN_IDS[planType] });
+                    },
+                    onApprove: async (data) => {
+                        const subId = data.subscriptionID;
+                        // localStorage 저장
+                        const s = JSON.parse(localStorage.getItem('thanq_settings') || '{}');
+                        s.isPro = true;
+                        s.planType = planType;
+                        s.subscriptionId = subId;
+                        localStorage.setItem('thanq_settings', JSON.stringify(s));
+                        // Firestore 저장 (로그인 유저만)
+                        if (currentUser && !currentUser.isAnonymous) {
+                            try {
+                                await setDoc(doc(db, 'users', currentUser.uid, 'subscription', 'info'), {
+                                    isPro: true,
+                                    planType,
+                                    subscriptionId: subId,
+                                    activatedAt: new Date().toISOString(),
+                                });
+                            } catch (e) { console.warn('Firestore 구독 저장 실패', e); }
+                        }
+                        setIsPro(true);
+                        showToast('🎉 ThanQ Pro 구독 완료! 환영해요!');
+                    },
+                    onError: (err) => {
+                        console.error('PayPal Error:', err);
+                        showToast('❌ 결제 중 오류가 발생했어요. 다시 시도해주세요.');
+                    },
+                }).render(paypalBtnRef.current);
+                setPaypalLoaded(true);
+            } catch (e) {
+                console.warn('PayPal render error:', e);
+                setPaypalError(true);
+            }
+        };
+
+        // SDK 이미 로드됐으면 바로 렌더
+        if (window.paypal) {
+            loadAndRender();
+            return;
+        }
+
+        // SDK 동적 로드
+        const script = document.createElement('script');
+        script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
+        script.async = true;
+        script.onload = loadAndRender;
+        script.onerror = () => setPaypalError(true);
+        document.head.appendChild(script);
+
+        return () => { rendered = true; }; // 클린업
+    }, [isPro, planType]);
 
     // 다크모드 토글
     const toggleDarkMode = () => {
@@ -116,9 +193,9 @@ export default function Settings() {
             <div className="profile-card card animate-fade-in-up">
                 <div className="profile-avatar">
                     {currentUser?.photoURL ? (
-                        <img src={currentUser.photoURL} alt="profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                        <img src={currentUser.photoURL} alt="profile" className="profile-img" />
                     ) : (
-                        <span>🐱</span>
+                        <img src="/smith-avatar.png" alt="Smith" className="profile-img" />
                     )}
                 </div>
                 <div className="profile-info">
@@ -137,14 +214,38 @@ export default function Settings() {
                 <div className="pro-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                     <div className="pro-header">
                         <h2 className="pro-title">✨ ThanQ Pro</h2>
-                        <p className="pro-subtitle">정리의 모든 것을 프로처럼</p>
+                        <p className="pro-subtitle">정리의 모든 것을 프리미엄으로</p>
                     </div>
+
+                    {/* 플랜 선택 토글 */}
+                    <div className="plan-toggle">
+                        <button
+                            className={`plan-btn ${planType === 'monthly' ? 'active' : ''}`}
+                            onClick={() => setPlanType('monthly')}
+                        >
+                            월간
+                        </button>
+                        <button
+                            className={`plan-btn ${planType === 'annual' ? 'active' : ''}`}
+                            onClick={() => setPlanType('annual')}
+                        >
+                            연간 <span className="plan-save-badge">30% 절약</span>
+                        </button>
+                    </div>
+
                     <div className="pro-features">
+                        <div className="pro-feature">
+                            <span className="pro-icon">☁️</span>
+                            <div>
+                                <p className="feature-title">무제한 클라우드 저장</p>
+                                <p className="feature-desc">어느 기기에서든 동기화 (무료: 10개 한도)</p>
+                            </div>
+                        </div>
                         <div className="pro-feature">
                             <span className="pro-icon">💬</span>
                             <div>
-                                <p className="feature-title">무제한 AI 대화</p>
-                                <p className="feature-desc">스미스와 횟수 제한 없이 대화하세요</p>
+                                <p className="feature-title">무제한 AI 분석</p>
+                                <p className="feature-desc">스미스와 횟수 제한 없이 (무료: 하루 10회)</p>
                             </div>
                         </div>
                         <div className="pro-feature">
@@ -157,26 +258,43 @@ export default function Settings() {
                         <div className="pro-feature">
                             <span className="pro-icon">📊</span>
                             <div>
-                                <p className="feature-title">월간 정리 리포트</p>
-                                <p className="feature-desc">상세 분석과 맞춤 추천을 받아보세요</p>
-                            </div>
-                        </div>
-                        <div className="pro-feature">
-                            <span className="pro-icon">📦</span>
-                            <div>
-                                <p className="feature-title">위시리스트 커스텀</p>
-                                <p className="feature-desc">알림 주기와 메모를 자유롭게</p>
+                                <p className="feature-title">주간 스미스 리포트</p>
+                                <p className="feature-desc">감정 흐름 분석 + AI 맞춤 추천</p>
                             </div>
                         </div>
                     </div>
+
                     <div className="pro-pricing">
                         <div className="price-tag">
-                            <span className="price-amount">$4.99</span>
-                            <span className="price-period">/월</span>
+                            {planType === 'monthly' ? (
+                                <>
+                                    <span className="price-amount">$2.99</span>
+                                    <span className="price-period">/월</span>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="price-amount">$24.99</span>
+                                    <span className="price-period">/년</span>
+                                    <span className="price-monthly-eq"> ($2.08/월)</span>
+                                </>
+                            )}
                         </div>
-                        <button className="pro-subscribe-btn" onClick={() => setIsPro(true)}>
-                            Pro 시작하기
-                        </button>
+
+                        {/* PayPal 결제 버튼 */}
+                        <div className="paypal-btn-wrapper">
+                            <div ref={paypalBtnRef} id="paypal-subscription-btn"></div>
+                            {!paypalLoaded && !paypalError && (
+                                <div className="paypal-loading">
+                                    <div className="paypal-loading-spinner"></div>
+                                    <span>결제 버튼 불러오는 중...</span>
+                                </div>
+                            )}
+                            {paypalError && (
+                                <button className="pro-subscribe-btn" onClick={() => showToast('⚠️ 네트워크 오류. 인터넷 연결을 확인해주세요.')}>
+                                    {planType === 'monthly' ? '월간 Pro 시작하기' : '연간 Pro 시작하기'}
+                                </button>
+                            )}
+                        </div>
                         <p className="pro-trial">7일 무료 체험 · 언제든 취소 가능</p>
                     </div>
                 </div>

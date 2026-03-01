@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createConversation, getNextResponseAsync, getNextResponse, processChoice, getDecisionSuggestion, getFarewellMessage } from '../utils/smithAI';
-import { checkApiLimit, incrementApiUsage, addItem, CATEGORIES, guessCategory } from '../utils/storage';
+import { checkApiLimit, incrementApiUsage, CATEGORIES, guessCategory } from '../utils/storage';
+import { addItemCloud } from '../utils/cloudStorage';
 import { analyzeImageWithAI } from '../utils/visionAI'; // 추가
 import { useAuth } from '../context/AuthContext';
 import './Chat.css';
@@ -128,6 +129,16 @@ export default function Chat() {
 
     const startChat = async () => {
         if (!itemName.trim()) return;
+
+        // 직접 입력하여 대화를 시작할 때도 API 한도를 확인합니다.
+        const limitCheck = checkApiLimit(currentUser);
+        if (!limitCheck.allowed) {
+            alert(limitCheck.reason);
+            return;
+        }
+
+        incrementApiUsage(currentUser);
+
         const conv = createConversation(itemName.trim(), itemCategory);
         setConversation(conv);
         setStep('chatting');
@@ -223,8 +234,7 @@ export default function Chat() {
         processNextTurn(-1, { type: 'user', message: textToProcess });
     };
 
-    const handleDecision = (decision) => {
-        // 대화 내용 요약 (최대 5개 메시지)
+    const handleDecision = async (decision) => {
         const chatSummary = chatHistory
             .filter(msg => msg.type === 'smith')
             .slice(-3)
@@ -234,17 +244,26 @@ export default function Chat() {
         const item = {
             name: itemName,
             category: itemCategory,
-            status: decision, // 'farewell' | 'wishlist'
+            status: decision,
             farewellMessage: decision === 'farewell' ? getFarewellMessage(itemName) : null,
-            imageData: capturedImageData || null, // 실제 사진 저장
-            chatSummary: chatSummary || null, // AI 대화 요약
+            imageData: capturedImageData || null,
+            chatSummary: chatSummary || null,
         };
-        addItem(item);
 
-        if (decision === 'farewell') {
-            navigate('/farewell', { state: { item } });
-        } else {
-            navigate('/archive');
+        try {
+            const saved = await addItemCloud(currentUser, item);
+            if (decision === 'farewell') {
+                navigate('/farewell', { state: { item: saved } });
+            } else {
+                navigate('/archive');
+            }
+        } catch (e) {
+            if (e.message === 'FREE_LIMIT_REACHED') {
+                alert('보관함이 꽉 찼어요! (무료 10개 한도)\n🌟 ThanQ Pro로 업그레이드하면 무제한으로 보관할 수 있어요!');
+            } else {
+                alert('저장 중 오류가 발생했어요. 다시 시도해주세요.');
+                console.error(e);
+            }
         }
     };
 
@@ -280,8 +299,7 @@ export default function Chat() {
             <div className="page chat-page">
                 <div className="chat-input-section animate-fade-in-up">
                     <div className="smith-chat-avatar">
-                        <span>🐱</span>
-                        <div className="smith-goggle">🔧</div>
+                        <img src="/smith-excited.png" alt="스미스" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                     </div>
                     <div className="smith-intro-bubble">
                         <p>안녕! 나는 <strong>스미스</strong>야.</p>
@@ -368,7 +386,7 @@ export default function Chat() {
             <div className="chat-messages">
                 {chatHistory.map((msg, i) => (
                     <div key={i} className={`message ${msg.type} animate-fade-in-up`} style={{ animationDelay: `${i * 0.05}s` }}>
-                        {msg.type === 'smith' && <span className="msg-avatar">🐱</span>}
+                        {msg.type === 'smith' && <img className="msg-avatar" src="/smith-empathy.png" alt="스미스" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />}
                         <div className={`msg-bubble ${msg.type}`}>
                             <p>{msg.message}</p>
                         </div>
@@ -377,7 +395,7 @@ export default function Chat() {
 
                 {isTyping && (
                     <div className="message smith animate-fade-in">
-                        <span className="msg-avatar">🐱</span>
+                        <img className="msg-avatar" src="/smith-thinking.png" alt="스미스" style={{ width: '32px', height: '32px', objectFit: 'cover', borderRadius: '50%', flexShrink: 0 }} />
                         <div className="msg-bubble smith typing">
                             <span className="dot"></span><span className="dot"></span><span className="dot"></span>
                         </div>

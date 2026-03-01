@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { getStats, getRankings, getMissions, getMissionProgress, getUnlockedThemes, getAllThemes } from '../utils/storage';
-import { getSmithReaction } from '../utils/smithAI';
+import { getMissions, getMissionProgress, getUnlockedThemes, getAllThemes } from '../utils/storage';
+import { getSmithReaction, generateWeeklyReport } from '../utils/smithAI';
+import { getItemsCloud, getRankingsCloud } from '../utils/cloudStorage';
+import { useAuth } from '../context/AuthContext';
 import './Stats.css';
 
 export default function Stats() {
@@ -8,14 +10,83 @@ export default function Stats() {
     const [rankings, setRankings] = useState([]);
     const [missions, setMissions] = useState([]);
     const [themes, setThemes] = useState([]);
+    const [weeklyReport, setWeeklyReport] = useState(null);
+    const [reportLoading, setReportLoading] = useState(false);
     const allThemes = getAllThemes();
+    const { currentUser } = useAuth();
 
     useEffect(() => {
-        setStats(getStats());
-        setRankings(getRankings());
-        setMissions(getMissions());
-        setThemes(getUnlockedThemes().map(t => t.id));
-    }, []);
+        const loadRealData = async () => {
+            // 미션과 테마 불러오기 (로컬 기반)
+            setMissions(getMissions());
+            setThemes(getUnlockedThemes().map(t => t.id));
+
+            // 클라우드 아이템 기반으로 실제 통계 계산
+            const items = await getItemsCloud(currentUser);
+            const farewells = items.filter(i => i.status === 'farewell' || !i.status); // 기존 데이터 하위호환
+            const wishlists = items.filter(i => i.status === 'wishlist');
+
+            const categories = {};
+            farewells.forEach(item => {
+                const cat = item.category || '기타';
+                categories[cat] = (categories[cat] || 0) + 1;
+            });
+
+            const thisMonth = farewells.filter(i => {
+                const d = new Date(i.createdAt);
+                const now = new Date();
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            }).length;
+
+            setStats({
+                total: farewells.length,
+                thisMonth,
+                categories,
+                wishlistCount: wishlists.length
+            });
+
+            // 진짜 랭킹 불러오기
+            const cloudRanks = await getRankingsCloud();
+            let formattedRanks = cloudRanks.map((r, i) => ({
+                rank: i + 1,
+                name: r.name,
+                count: r.count,
+                avatar: r.avatar === '🐱' ? '🐱' : <img src={r.avatar} alt="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />,
+                isMe: currentUser && r.id === currentUser.uid
+            }));
+
+            // 내가 랭킹에 없을 경우 맨 밑에 추가 (현재 임시 로직)
+            if (currentUser && currentUser.uid && !formattedRanks.some(r => r.isMe) && farewells.length > 0) {
+                formattedRanks.push({
+                    rank: '-',
+                    name: currentUser.displayName || '나',
+                    count: farewells.length,
+                    avatar: currentUser.photoURL ? <img src={currentUser.photoURL} alt="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} /> : '🐱',
+                    isMe: true
+                });
+            }
+
+            // 만약 랭킹 데이터가 비어있다면 목업 대신 안내메시지용 더미 리스트 또는 빈 리스트 유지
+            setRankings(formattedRanks);
+        };
+
+        loadRealData();
+
+        // 주간 리포트 생성 (가짜 통계 말고 진짜 데이터 기반)
+        const loadReport = async () => {
+            setReportLoading(true);
+            try {
+                const items = await getItemsCloud(currentUser);
+                const report = await generateWeeklyReport(items);
+                setWeeklyReport(report);
+            } catch (e) {
+                console.warn('Weekly report failed:', e);
+            } finally {
+                setReportLoading(false);
+            }
+        };
+        loadReport();
+    }, [currentUser]);
 
     const reaction = getSmithReaction(stats.total);
 
@@ -102,8 +173,8 @@ export default function Stats() {
             <section className="stats-section animate-fade-in-up" style={{ animationDelay: '0.15s' }}>
                 <h2 className="stats-section-title">이번 주 TOP 랭커</h2>
                 <div className="ranking-card card">
-                    {rankings.map(r => (
-                        <div key={r.rank} className={`rank-row ${r.isMe ? 'rank-me' : ''}`}>
+                    {rankings.length > 0 ? rankings.map(r => (
+                        <div key={r.rank === '-' ? 'me' : r.rank} className={`rank-row ${r.isMe ? 'rank-me' : ''}`}>
                             <span className="rank-num">
                                 {r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : r.rank}
                             </span>
@@ -117,7 +188,11 @@ export default function Stats() {
                                 <span className="rank-score-unit">pts</span>
                             </div>
                         </div>
-                    ))}
+                    )) : (
+                        <p className="no-data-text" style={{ padding: '20px', textAlign: 'center' }}>
+                            아직 랭킹 데이터가 없어요.<br />제일 먼저 정리를 시작해볼까요?
+                        </p>
+                    )}
                 </div>
             </section>
 
@@ -143,17 +218,61 @@ export default function Stats() {
                 })}
             </section>
 
+            {/* 주간 스미스 리포트 */}
+            <section className="stats-section animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+                <h2 className="stats-section-title">📊 이번 주 스미스 리포트</h2>
+                <div className="weekly-report-card card">
+                    {reportLoading ? (
+                        <div className="report-loading">
+                            <div className="report-loading-dot"></div>
+                            <p>스미스가 이번 주를 분석하갌어...</p>
+                        </div>
+                    ) : weeklyReport ? (
+                        <>
+                            <div className="report-week-label">
+                                {weeklyReport.weekStart} 주
+                            </div>
+                            <div className="report-stats-row">
+                                <div className="report-stat-box">
+                                    <span className="report-stat-emoji">{weeklyReport.emoji}</span>
+                                    <span className="report-stat-num">{weeklyReport.totalSent}</span>
+                                    <span className="report-stat-label">작별한 물건</span>
+                                </div>
+                                <div className="report-stat-box">
+                                    <span className="report-stat-emoji">💭</span>
+                                    <span className="report-stat-num">{weeklyReport.wishlistCount}</span>
+                                    <span className="report-stat-label">위시리스트</span>
+                                </div>
+                                {weeklyReport.topCategory && (
+                                    <div className="report-stat-box">
+                                        <span className="report-stat-emoji">🏷️</span>
+                                        <span className="report-stat-num" style={{ fontSize: '14px' }}>{weeklyReport.topCategory}</span>
+                                        <span className="report-stat-label">많이 정리</span>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="report-ai-comment">
+                                <span className="report-smith-avatar">🐱</span>
+                                <p>{weeklyReport.aiComment}</p>
+                            </div>
+                        </>
+                    ) : (
+                        <p className="report-empty">데이터를 불러오는 중이에요...</p>
+                    )}
+                </div>
+            </section>
+
             {/* ThanQ Pro 배너 */}
-            <div className="pro-banner animate-fade-in-up" style={{ animationDelay: '0.35s' }}>
+            <div className="pro-banner animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
                 <span className="pro-badge">PRO ACCESS</span>
                 <h3 className="pro-title">ThanQ Pro</h3>
                 <ul className="pro-features">
                     <li>✅ 무제한 AI 상담 채팅</li>
+                    <li>✅ 클라우드 무제한 저장</li>
                     <li>✅ 프리미엄 작별 테마</li>
-                    <li>✅ 광고 없는 순수한 경험</li>
                 </ul>
-                <button className="pro-subscribe-btn">Subscribe for $4.99/mo</button>
-                <p className="pro-note">Cancel anytime. Terms & Privacy apply.</p>
+                <button className="pro-subscribe-btn">$2.99/월로 시작하기</button>
+                <p className="pro-note">언제든 취소 가능. 7일 무료 체험.</p>
             </div>
         </div>
     );

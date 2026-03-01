@@ -125,13 +125,15 @@
 }
 
 .smith-farewell-face {
-    font-size: 48px;
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid rgba(255, 255, 255, 0.4);
+    box-shadow: 0 0 20px rgba(255, 204, 128, 0.5);
+    animation: float 2s ease-in-out infinite;
 }
 
-.smith-wave {
-    font-size: 24px;
-    animation: float 1.5s ease-in-out infinite;
-}
 
 /* 액션 버튼 */
 .farewell-actions {
@@ -194,4 +196,122 @@
     color: white;
     border-radius: 12px;
     font-weight: 600;
+}
+
+/* ===== Farewell Share Card ===== */
+.farewell-share-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+}
+
+.farewell-watermark {
+    margin-top: 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+    letter-spacing: 2px;
+}
+
+/* ===== Share Button ===== */
+.farewell-share-btn {
+    padding: 14px;
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    transition: all 0.2s;
+    backdrop-filter: blur(8px);
+}
+
+.farewell-share-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.02);
+}
+
+.farewell-share-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ===== Farewell Themes (Pro) ===== */
+.farewell-page-full.theme-aurora {
+    background: linear-gradient(180deg, #0f2027 0%, #203a43 50%, #2c5364 100%);
+}
+
+.farewell-page-full.theme-fireworks {
+    background: linear-gradient(180deg, #1f1c2c 0%, #4a3e66 100%);
+}
+
+.farewell-page-full.theme-butterfly {
+    background: linear-gradient(180deg, #ffd194 0%, #70e1f5 100%);
+}
+
+.theme-bg-butterfly .farewell-item-name,
+.theme-bg-butterfly .farewell-text,
+.theme-bg-butterfly .farewell-sub,
+.theme-bg-butterfly .farewell-watermark {
+    color: rgba(0, 0, 0, 0.85);
+    /* 밝은 나비 테마에선 텍스트 색상을 어둡게 */
+}
+
+/* ===== Theme Selector ===== */
+.farewell-theme-selector {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.theme-btn {
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(8px);
+}
+
+.theme-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateY(-2px);
+}
+
+.theme-btn.active {
+    background: var(--coral);
+    color: white;
+    border-color: var(--coral);
+    box-shadow: 0 4px 12px rgba(255, 127, 80, 0.3);
+    transform: translateY(-2px);
+}
+
+/* 밝은 테마에서 버튼 색상 */
+.farewell-page-full.theme-butterfly .theme-btn {
+    color: rgba(0, 0, 0, 0.7);
+    border-color: rgba(0, 0, 0, 0.1);
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.farewell-page-full.theme-butterfly .farewell-archive-btn,
+.farewell-page-full.theme-butterfly .farewell-share-btn {
+    color: rgba(0, 0, 0, 0.85);
+    border-color: rgba(0, 0, 0, 0.2);
+    background: rgba(255, 255, 255, 0.3);
+}
+
+.farewell-page-full.theme-butterfly .theme-btn.active {
+    background: var(--coral);
+    color: white;
+    border-color: var(--coral);
 }

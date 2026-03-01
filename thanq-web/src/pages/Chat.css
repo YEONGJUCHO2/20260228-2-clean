@@ -13,30 +13,12 @@
     position: relative;
     width: 80px;
     height: 80px;
-    background: linear-gradient(135deg, #FFE0B2, #FFCC80);
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 44px;
+    overflow: hidden;
     margin-bottom: var(--space-md);
     animation: float 3s ease-in-out infinite;
-    box-shadow: 0 8px 30px rgba(255, 204, 128, 0.3);
-}
-
-.smith-goggle {
-    position: absolute;
-    top: -6px;
-    right: -6px;
-    background: var(--gold);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    border: 2px solid white;
+    box-shadow: 0 8px 30px rgba(255, 204, 128, 0.4);
+    border: 3px solid #FFCC80;
 }
 
 .smith-intro-bubble {
@@ -234,13 +216,12 @@
 }
 
 .msg-avatar {
-    font-size: 28px;
-    width: 36px;
-    height: 36px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
     flex-shrink: 0;
+    border: 2px solid #FFCC80;
 }
 
 .msg-bubble {

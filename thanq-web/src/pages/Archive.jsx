@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { getFarewellItems, getWishlistItems, getBadges, getAllBadgeDefs, deleteItems } from '../utils/storage';
+import { getBadges, getAllBadgeDefs } from '../utils/storage';
+import { getItemsCloud, deleteItemCloud, deleteItemsCloud, getStorageInfo, FREE_USER_ITEM_LIMIT } from '../utils/cloudStorage';
+import { useAuth } from '../context/AuthContext';
 import './Archive.css';
 
 const CATEGORY_NAMES = {
@@ -14,32 +16,46 @@ const getCategoryIcon = (cat) => {
 };
 
 const getCustomBadgeIcon = (id, defaultIcon) => {
-    if (id === 'first_farewell') return '👣'; // 첫걸음
-    if (id === 'farewell_master') return '✨'; // 비움의 마스터
-    if (id === 'earth_friend') return '🌱'; // 지구의 친구
+    if (id === 'first_farewell') return '👣';
+    if (id === 'farewell_master') return '✨';
+    if (id === 'earth_friend') return '🌱';
     return defaultIcon;
 };
 
 const getCatName = (cat) => CATEGORY_NAMES[cat] || cat;
 
 export default function Archive() {
+    const { currentUser } = useAuth();
     const [tab, setTab] = useState('archive');
-    const [farewellItems, setFarewellItems] = useState([]);
-    const [wishlistItems, setWishlistItems] = useState([]);
+    const [allItems, setAllItems] = useState([]);
     const [badges, setBadges] = useState([]);
     const [selectedItem, setSelectedItem] = useState(null);
     const [selectMode, setSelectMode] = useState(false);
     const [selectedIds, setSelectedIds] = useState(new Set());
+    const [storageInfo, setStorageInfo] = useState({ count: 0, limit: null, tier: 'guest' });
+    const [loading, setLoading] = useState(true);
     const longPressTimer = useRef(null);
     const allBadges = getAllBadgeDefs();
 
-    const refreshItems = () => {
-        setFarewellItems(getFarewellItems());
-        setWishlistItems(getWishlistItems());
-        setBadges(getBadges());
+    const farewellItems = allItems.filter(i => i.status === 'farewell');
+    const wishlistItems = allItems.filter(i => i.status === 'wishlist');
+
+    const refreshItems = async () => {
+        setLoading(true);
+        try {
+            const items = await getItemsCloud(currentUser);
+            setAllItems(items);
+            setBadges(getBadges());
+            const info = await getStorageInfo(currentUser);
+            setStorageInfo(info);
+        } catch (e) {
+            console.error('아이템 로드 실패:', e);
+        } finally {
+            setLoading(false);
+        }
     };
 
-    useEffect(() => { refreshItems(); }, []);
+    useEffect(() => { refreshItems(); }, [currentUser]);
 
     const formatDate = (dateStr) => {
         const d = new Date(dateStr);
@@ -69,11 +85,11 @@ export default function Archive() {
         }
     };
 
-    const handleDeleteSelected = () => {
+    const handleDeleteSelected = async () => {
         if (selectedIds.size === 0) return;
         if (window.confirm(`${selectedIds.size}개 항목을 삭제할까요?`)) {
-            deleteItems([...selectedIds]);
-            refreshItems();
+            await deleteItemsCloud(currentUser, [...selectedIds]);
+            await refreshItems();
             setSelectMode(false);
             setSelectedIds(new Set());
         }
@@ -85,6 +101,27 @@ export default function Archive() {
     };
 
     const currentItems = tab === 'archive' ? farewellItems : wishlistItems;
+
+    // 저장 한도 UI
+    const StorageBar = () => {
+        if (!storageInfo.limit) return null; // Pro 또는 게스트는 미표시
+        const pct = Math.min((storageInfo.count / storageInfo.limit) * 100, 100);
+        const nearLimit = storageInfo.count >= storageInfo.limit - 2;
+        return (
+            <div className={`storage-bar-wrap animate-fade-in ${nearLimit ? 'near-limit' : ''}`}>
+                <div className="storage-bar-info">
+                    <span>☁️ 보관함</span>
+                    <span className="storage-bar-count">
+                        {storageInfo.count} / {storageInfo.limit}개
+                        {nearLimit && <span className="storage-bar-warn"> · Pro로 무제한 이용 🌟</span>}
+                    </span>
+                </div>
+                <div className="storage-bar-track">
+                    <div className="storage-bar-fill" style={{ width: `${pct}%`, background: nearLimit ? 'var(--coral)' : 'var(--teal)' }} />
+                </div>
+            </div>
+        );
+    };
 
     return (
         <div className="page archive-page">
@@ -98,6 +135,9 @@ export default function Archive() {
                 </button>
             </header>
 
+            {/* 저장 한도 바 */}
+            <StorageBar />
+
             {/* 탭 */}
             <div className="archive-tab-bar animate-fade-in">
                 <button className={`archive-tab ${tab === 'archive' ? 'active' : ''}`} onClick={() => { setTab('archive'); cancelSelectMode(); }}>
@@ -110,7 +150,7 @@ export default function Archive() {
                 </button>
             </div>
 
-            {/* 요약 텍스트 (스티치 스타일) */}
+            {/* 요약 텍스트 */}
             {(tab === 'archive' || tab === 'wishlist') && (
                 <div className="archive-summary-text animate-fade-in-up">
                     {tab === 'archive'
@@ -147,10 +187,15 @@ export default function Archive() {
                 </div>
             )}
 
-            {/* 포토 그리드 (폴라로이드 스타일) */}
+            {/* 포토 그리드 */}
             {(tab === 'archive' || tab === 'wishlist') && (
                 <div className="photo-grid animate-fade-in-up">
-                    {currentItems.length === 0 ? (
+                    {loading ? (
+                        <div className="empty-state">
+                            <span className="empty-icon" style={{ animation: 'pulse 1s infinite' }}>☁️</span>
+                            <p>불러오는 중...</p>
+                        </div>
+                    ) : currentItems.length === 0 ? (
                         <div className="empty-state">
                             <span className="empty-icon">{tab === 'archive' ? '📭' : '💭'}</span>
                             <p>{tab === 'archive' ? '아직 보내준 물건이 없어요' : '보류 중인 물건이 없어요'}</p>
@@ -250,11 +295,11 @@ export default function Archive() {
                             )}
                         </div>
 
-                        <button className="detail-delete-btn" onClick={() => {
+                        <button className="detail-delete-btn" onClick={async () => {
                             if (window.confirm('정말 삭제할까요?')) {
-                                deleteItems([selectedItem.id]);
+                                await deleteItemCloud(currentUser, selectedItem.id);
                                 setSelectedItem(null);
-                                refreshItems();
+                                await refreshItems();
                             }
                         }}>
                             🗑️ 삭제하기

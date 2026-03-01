@@ -343,19 +343,26 @@ export function checkApiLimit(user) {
     const uid = user.uid;
     const today = new Date().toDateString();
 
+    const isPro = JSON.parse(localStorage.getItem('thanq_settings') || '{}').isPro === true;
+
     if (!limits[uid]) {
         limits[uid] = { guest_total: 0, last_date: today, daily_count: 0 };
     }
 
     if (user.isAnonymous) {
-        if (limits[uid].guest_total >= 999) return { allowed: false, reason: "게스트 체험 횟수를 모두 사용했습니다. 로그인 후 계속 이용해 보세요!" };
+        if (limits[uid].last_date !== today) {
+            limits[uid].last_date = today;
+            limits[uid].guest_total = 0;
+        }
+        if (limits[uid].guest_total >= 3) return { allowed: false, reason: "게스트 체험 횟수(하루 3회)를 모두 사용했어요. 로그인하면 더 많이 이용할 수 있어요! 🐱" };
         return { allowed: true };
     } else {
+        if (isPro) return { allowed: true }; // Pro 유저는 무제한
         if (limits[uid].last_date !== today) {
             limits[uid].last_date = today;
             limits[uid].daily_count = 0;
         }
-        if (limits[uid].daily_count >= 10) return { allowed: false, reason: "오늘의 무료 분석 횟수(10회)를 모두 사용했습니다. 내일 다시 시도해주세요!" };
+        if (limits[uid].daily_count >= 10) return { allowed: false, reason: "오늘의 무료 분석 횟수(10회)를 모두 사용했어요.\n🌟 ThanQ Pro로 무제한 분석을 즐겨보세요!" };
         return { allowed: true };
     }
 }
@@ -371,6 +378,10 @@ export function incrementApiUsage(user) {
     }
 
     if (user.isAnonymous) {
+        if (limits[uid].last_date !== today) {
+            limits[uid].last_date = today;
+            limits[uid].guest_total = 0;
+        }
         limits[uid].guest_total += 1;
     } else {
         if (limits[uid].last_date !== today) {

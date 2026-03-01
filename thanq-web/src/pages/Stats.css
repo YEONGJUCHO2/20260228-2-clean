@@ -292,3 +292,107 @@
     margin-top: 10px;
     opacity: 0.7;
 }
+
+/* ===== 주간 스미스 리포트 ===== */
+.weekly-report-card {
+    padding: 16px;
+}
+
+.report-week-label {
+    font-size: 11px;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-bottom: 14px;
+    letter-spacing: 0.5px;
+}
+
+.report-stats-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.report-stat-box {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    padding: 12px 8px;
+}
+
+.report-stat-emoji {
+    font-size: 20px;
+}
+
+.report-stat-num {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--coral);
+    line-height: 1;
+}
+
+.report-stat-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    font-weight: 600;
+}
+
+.report-ai-comment {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: linear-gradient(135deg, rgba(232, 131, 107, 0.08), rgba(255, 204, 128, 0.06));
+    border-radius: var(--radius-md);
+    padding: 12px 14px;
+    border-left: 3px solid var(--coral-light);
+}
+
+.report-smith-avatar {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.report-ai-comment p {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.report-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px;
+}
+
+.report-loading-dot {
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--beige);
+    border-top-color: var(--coral);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.report-loading p {
+    font-size: 13px;
+    color: var(--text-muted);
+}
+
+.report-empty {
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-muted);
+    padding: 20px;
+}
