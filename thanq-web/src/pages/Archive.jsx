@@ -34,6 +34,7 @@ export default function Archive() {
     const [selectedIds, setSelectedIds] = useState(new Set());
     const [storageInfo, setStorageInfo] = useState({ count: 0, limit: null, tier: 'guest' });
     const [loading, setLoading] = useState(true);
+    const [confirmModal, setConfirmModal] = useState({ isOpen: false, title: '', onConfirm: null });
     const longPressTimer = useRef(null);
     const allBadges = getAllBadgeDefs();
 
@@ -87,12 +88,17 @@ export default function Archive() {
 
     const handleDeleteSelected = async () => {
         if (selectedIds.size === 0) return;
-        if (window.confirm(`${selectedIds.size}개 항목을 삭제할까요?`)) {
-            await deleteItemsCloud(currentUser, [...selectedIds]);
-            await refreshItems();
-            setSelectMode(false);
-            setSelectedIds(new Set());
-        }
+        setConfirmModal({
+            isOpen: true,
+            title: `${selectedIds.size}개의 항목을 삭제할까요? 삭제된 항목은 복구할 수 없어요.`,
+            onConfirm: async () => {
+                await deleteItemsCloud(currentUser, [...selectedIds]);
+                await refreshItems();
+                setSelectMode(false);
+                setSelectedIds(new Set());
+                setConfirmModal({ isOpen: false, title: '', onConfirm: null });
+            }
+        });
     };
 
     const cancelSelectMode = () => {
@@ -105,9 +111,13 @@ export default function Archive() {
     // 미니 용량 표시 (무료 사용자용)
     const StorageBar = () => {
         if (!storageInfo.limit) return null; // Pro 또는 게스트는 미표시
+        const ratio = Math.min((storageInfo.count / storageInfo.limit) * 100, 100);
         return (
             <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px', fontWeight: 'bold', letterSpacing: '1px' }}>
-                용량 [{storageInfo.count} / {storageInfo.limit}]
+                <div style={{ marginBottom: '6px' }}>용량 [{storageInfo.count} / {storageInfo.limit}]</div>
+                <div style={{ width: '80%', height: '6px', background: 'var(--bg-secondary)', borderRadius: '3px', margin: '0 auto', overflow: 'hidden' }}>
+                    <div style={{ width: `${ratio}%`, height: '100%', background: 'linear-gradient(90deg, #4CAF50, #81C784)', transition: 'width 0.3s ease' }}></div>
+                </div>
             </div>
         );
     };
@@ -175,9 +185,6 @@ export default function Archive() {
                         </div>
                     ) : (
                         <>
-                            {!selectMode && currentItems.length > 0 && (
-                                <p className="long-press-hint">💡 꾹 눌러서 다중 선택</p>
-                            )}
                             <div className="photo-grid-inner">
                                 {currentItems.map((item, i) => (
                                     <div
@@ -267,15 +274,43 @@ export default function Archive() {
                             )}
                         </div>
 
-                        <button className="detail-delete-btn" onClick={async () => {
-                            if (window.confirm('정말 삭제할까요?')) {
-                                await deleteItemCloud(currentUser, selectedItem.id);
-                                setSelectedItem(null);
-                                await refreshItems();
-                            }
+                        <button className="detail-delete-btn" onClick={() => {
+                            setConfirmModal({
+                                isOpen: true,
+                                title: '이 항목을 정말 삭제할까요?',
+                                onConfirm: async () => {
+                                    await deleteItemCloud(currentUser, selectedItem.id);
+                                    setSelectedItem(null);
+                                    await refreshItems();
+                                    setConfirmModal({ isOpen: false, title: '', onConfirm: null });
+                                }
+                            });
                         }}>
                             🗑️ 삭제하기
                         </button>
+                    </div>
+                </div>
+            )}
+
+            {/* 커스텀 확인 모달 */}
+            {confirmModal.isOpen && (
+                <div className="detail-overlay" style={{ zIndex: 1000 }} onClick={() => setConfirmModal({ isOpen: false, title: '', onConfirm: null })}>
+                    <div className="detail-card animate-fade-in-up" onClick={(e) => e.stopPropagation()} style={{ padding: '30px 20px', textAlign: 'center', width: '80%', maxWidth: '320px', minHeight: 'auto' }}>
+                        <h3 style={{ fontSize: '18px', fontWeight: 'bold', marginBottom: '25px', color: 'var(--text-primary)', wordBreak: 'keep-all', lineHeight: '1.4' }}>
+                            {confirmModal.title}
+                        </h3>
+                        <div style={{ display: 'flex', gap: '10px' }}>
+                            <button
+                                onClick={() => setConfirmModal({ isOpen: false, title: '', onConfirm: null })}
+                                style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', background: 'var(--bg-secondary)', color: 'var(--text-muted)', fontSize: '16px', fontWeight: 'bold' }}>
+                                취소
+                            </button>
+                            <button
+                                onClick={confirmModal.onConfirm}
+                                style={{ flex: 1, padding: '14px', borderRadius: '12px', border: 'none', background: 'var(--coral)', color: '#fff', fontSize: '16px', fontWeight: 'bold' }}>
+                                삭제
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

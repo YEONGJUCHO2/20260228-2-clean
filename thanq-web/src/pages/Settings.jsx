@@ -1,102 +1,21 @@
-import { useState, useRef, useEffect } from 'react';
-import { getStats, getSettings, updateSettings, exportAllData, importData, resetAllData } from '../utils/storage';
+import { useState } from 'react';
+import { getStats, getSettings, updateSettings } from '../utils/storage';
 import { useAuth } from '../context/AuthContext';
-import { logoutUser, db } from '../utils/firebase';
-import { doc, setDoc } from 'firebase/firestore';
+import { logoutUser } from '../utils/firebase';
+import { getItemsCloud } from '../utils/cloudStorage';
 import './Settings.css';
 
 export default function Settings() {
-    const [isPro, setIsPro] = useState(() => JSON.parse(localStorage.getItem('thanq_settings') || '{}').isPro || false);
-    const [planType, setPlanType] = useState('monthly'); // 'monthly' | 'annual'
+    const [isPro] = useState(() => JSON.parse(localStorage.getItem('thanq_settings') || '{}').isPro || false);
     const [settings, setSettings] = useState(getSettings());
     const [toast, setToast] = useState('');
-    const [showHelp, setShowHelp] = useState(false);
-    const [showResetConfirm, setShowResetConfirm] = useState(false);
-    const [paypalLoaded, setPaypalLoaded] = useState(false);
-    const [paypalError, setPaypalError] = useState(false);
-    const fileInputRef = useRef(null);
-    const paypalBtnRef = useRef(null);
     const stats = getStats();
     const { currentUser } = useAuth();
-
-    // PayPal Live 설정
-    const PAYPAL_CLIENT_ID = 'AeehIL4XSLMOMO9da5Plo-Y7CfwJTdzvuvbrYJc01GvtM_kZEGPcxPJ5HQ2BXFv-qf-s9rWPvELRE6SH';
-    const PLAN_IDS = {
-        monthly: 'P-5X789781L2920905ANGSB3YY',
-        annual: 'P-2PJ08834P8666533GNGSB3YY',
-    };
 
     const showToast = (msg) => {
         setToast(msg);
         setTimeout(() => setToast(''), 2500);
     };
-
-    // PayPal SDK 로드 + 버튼 렌더
-    useEffect(() => {
-        if (isPro) return;
-        let rendered = false;
-
-        const loadAndRender = () => {
-            if (!window.paypal || rendered) return;
-            rendered = true;
-            if (paypalBtnRef.current) paypalBtnRef.current.innerHTML = '';
-
-            try {
-                window.paypal.Buttons({
-                    style: { layout: 'vertical', color: 'gold', shape: 'pill', label: 'subscribe' },
-                    createSubscription: (data, actions) => {
-                        return actions.subscription.create({ plan_id: PLAN_IDS[planType] });
-                    },
-                    onApprove: async (data) => {
-                        const subId = data.subscriptionID;
-                        // localStorage 저장
-                        const s = JSON.parse(localStorage.getItem('thanq_settings') || '{}');
-                        s.isPro = true;
-                        s.planType = planType;
-                        s.subscriptionId = subId;
-                        localStorage.setItem('thanq_settings', JSON.stringify(s));
-                        // Firestore 저장 (로그인 유저만)
-                        if (currentUser && !currentUser.isAnonymous) {
-                            try {
-                                await setDoc(doc(db, 'users', currentUser.uid, 'subscription', 'info'), {
-                                    isPro: true,
-                                    planType,
-                                    subscriptionId: subId,
-                                    activatedAt: new Date().toISOString(),
-                                });
-                            } catch (e) { console.warn('Firestore 구독 저장 실패', e); }
-                        }
-                        setIsPro(true);
-                        showToast('🎉 ThanQ Pro 구독 완료! 환영해요!');
-                    },
-                    onError: (err) => {
-                        console.error('PayPal Error:', err);
-                        showToast('❌ 결제 중 오류가 발생했어요. 다시 시도해주세요.');
-                    },
-                }).render(paypalBtnRef.current);
-                setPaypalLoaded(true);
-            } catch (e) {
-                console.warn('PayPal render error:', e);
-                setPaypalError(true);
-            }
-        };
-
-        // SDK 이미 로드됐으면 바로 렌더
-        if (window.paypal) {
-            loadAndRender();
-            return;
-        }
-
-        // SDK 동적 로드
-        const script = document.createElement('script');
-        script.src = `https://www.paypal.com/sdk/js?client-id=${PAYPAL_CLIENT_ID}&vault=true&intent=subscription`;
-        script.async = true;
-        script.onload = loadAndRender;
-        script.onerror = () => setPaypalError(true);
-        document.head.appendChild(script);
-
-        return () => { rendered = true; }; // 클린업
-    }, [isPro, planType]);
 
     // 다크모드 토글
     const toggleDarkMode = () => {
@@ -116,55 +35,28 @@ export default function Settings() {
         showToast(`🌍 언어: ${labels[nextLang]}`);
     };
 
+    // 추억함 내보내기 (이메일 전송 기능)
+    const handleExportEmail = async () => {
+        const items = await getItemsCloud(currentUser);
+        const farewellItems = items.filter(i => i.status === 'farewell' || !i.status);
 
-
-    // 데이터 백업 (JSON 다운로드)
-    const handleBackup = () => {
-        exportAllData();
-        showToast('☁️ 백업 파일이 다운로드되었습니다');
-    };
-
-    // 데이터 내보내기 (CSV-style)
-    const handleExportCSV = () => {
-        const items = JSON.parse(localStorage.getItem('thanq_items') || '[]');
-        if (items.length === 0) {
-            showToast('📤 내보낼 데이터가 없습니다');
+        if (farewellItems.length === 0) {
+            showToast('📤 추억함에 보낸 물건이 없습니다');
             return;
         }
-        let csv = '이름,카테고리,상태,날짜\n';
-        items.forEach(i => {
-            csv += `${i.name},${i.category},${i.status === 'farewell' ? '보냄' : '보류'},${i.createdAt?.slice(0, 10) || ''}\n`;
+
+        let body = '내 추억함 리스트:\n\n';
+        farewellItems.forEach(i => {
+            body += `- ${i.name} (${i.category || '미분류'}) - ${i.createdAt?.slice(0, 10) || ''}\n`;
         });
-        const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `thanq_export_${new Date().toISOString().slice(0, 10)}.csv`;
-        a.click();
-        URL.revokeObjectURL(url);
-        showToast('📤 CSV 파일이 다운로드되었습니다');
-    };
 
-    // 데이터 복원
-    const handleRestore = (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            const ok = importData(ev.target.result);
-            showToast(ok ? '✅ 데이터가 복원되었습니다. 새로고침합니다...' : '❌ 파일 형식이 올바르지 않습니다');
-            if (ok) setTimeout(() => window.location.reload(), 1500);
-        };
-        reader.readAsText(file);
-        e.target.value = '';
-    };
+        const subject = encodeURIComponent('ThanQ 추억함 리스트 내보내기');
+        const encodedBody = encodeURIComponent(body);
 
-    // 전체 초기화
-    const handleReset = () => {
-        resetAllData();
-        showToast('🗑️ 모든 데이터가 초기화되었습니다. 새로고침합니다...');
-        setShowResetConfirm(false);
-        setTimeout(() => window.location.reload(), 1500);
+        // 이메일 앱 열기 (사용자 본인 이메일로 전송)
+        const toEmail = currentUser?.email || '';
+        window.location.href = `mailto:${toEmail}?subject=${subject}&body=${encodedBody}`;
+        showToast('📧 메일 앱이 열립니다');
     };
 
     const handleLogout = async () => {
@@ -203,101 +95,8 @@ export default function Settings() {
                 </div>
             </div>
 
-            {/* ThanQ Pro 구독 */}
-            {!isPro && (
-                <div className="pro-card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                    <div className="pro-header">
-                        <h2 className="pro-title">✨ ThanQ Pro</h2>
-                        <p className="pro-subtitle">정리의 모든 것을 프리미엄으로</p>
-                    </div>
-
-                    {/* 플랜 선택 토글 */}
-                    <div className="plan-toggle">
-                        <button
-                            className={`plan-btn ${planType === 'monthly' ? 'active' : ''}`}
-                            onClick={() => setPlanType('monthly')}
-                        >
-                            월간
-                        </button>
-                        <button
-                            className={`plan-btn ${planType === 'annual' ? 'active' : ''}`}
-                            onClick={() => setPlanType('annual')}
-                        >
-                            연간 <span className="plan-save-badge">30% 절약</span>
-                        </button>
-                    </div>
-
-                    <div className="pro-features">
-                        <div className="pro-feature">
-                            <span className="pro-icon">☁️</span>
-                            <div>
-                                <p className="feature-title">무제한 클라우드 저장</p>
-                                <p className="feature-desc">어느 기기에서든 동기화 (무료: 10개 한도)</p>
-                            </div>
-                        </div>
-                        <div className="pro-feature">
-                            <span className="pro-icon">💬</span>
-                            <div>
-                                <p className="feature-title">무제한 AI 분석</p>
-                                <p className="feature-desc">스미스와 횟수 제한 없이 (무료: 하루 10회)</p>
-                            </div>
-                        </div>
-                        <div className="pro-feature">
-                            <span className="pro-icon">🎨</span>
-                            <div>
-                                <p className="feature-title">프리미엄 작별 테마</p>
-                                <p className="feature-desc">🔥 불꽃놀이, 🦋 나비, 🌌 오로라</p>
-                            </div>
-                        </div>
-
-                    </div>
-
-                    <div className="pro-pricing">
-                        <div className="price-tag">
-                            {planType === 'monthly' ? (
-                                <>
-                                    <span className="price-amount">$2.99</span>
-                                    <span className="price-period">/월</span>
-                                </>
-                            ) : (
-                                <>
-                                    <span className="price-amount">$24.99</span>
-                                    <span className="price-period">/년</span>
-                                    <span className="price-monthly-eq"> ($2.08/월)</span>
-                                </>
-                            )}
-                        </div>
-
-                        {/* PayPal 결제 버튼 */}
-                        <div className="paypal-btn-wrapper">
-                            <div ref={paypalBtnRef} id="paypal-subscription-btn"></div>
-                            {!paypalLoaded && !paypalError && (
-                                <div className="paypal-loading">
-                                    <div className="paypal-loading-spinner"></div>
-                                    <span>결제 버튼 불러오는 중...</span>
-                                </div>
-                            )}
-                            {paypalError && (
-                                <button className="pro-subscribe-btn" onClick={() => showToast('⚠️ 네트워크 오류. 인터넷 연결을 확인해주세요.')}>
-                                    {planType === 'monthly' ? '월간 Pro 시작하기' : '연간 Pro 시작하기'}
-                                </button>
-                            )}
-                        </div>
-                        <p className="pro-trial">7일 무료 체험 · 언제든 취소 가능</p>
-                    </div>
-                </div>
-            )}
-
-            {isPro && (
-                <div className="pro-active-card card animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
-                    <span className="pro-active-icon">🌟</span>
-                    <p className="pro-active-title">ThanQ Pro 활성화됨</p>
-                    <p className="pro-active-sub">모든 프리미엄 기능을 사용할 수 있어요!</p>
-                </div>
-            )}
-
             {/* 일반 설정 */}
-            <div className="settings-menu animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+            <div className="settings-menu animate-fade-in-up" style={{ animationDelay: '0.1s' }}>
                 <div className="menu-group">
                     <h3 className="menu-title">일반</h3>
 
@@ -318,74 +117,20 @@ export default function Settings() {
                     </button>
                 </div>
 
-
-
                 {/* 데이터 관리 */}
                 <div className="menu-group">
                     <h3 className="menu-title">데이터</h3>
 
-                    <button className="menu-item" onClick={handleBackup}>
-                        <span>☁️</span>
-                        <span className="menu-item-label">데이터 백업 (JSON)</span>
-                        <span className="menu-arrow">↓</span>
-                    </button>
-
-                    <button className="menu-item" onClick={handleExportCSV}>
+                    <button className="menu-item" onClick={handleExportEmail}>
                         <span>📤</span>
-                        <span className="menu-item-label">데이터 내보내기 (CSV)</span>
-                        <span className="menu-arrow">↓</span>
-                    </button>
-
-                    <button className="menu-item" onClick={() => fileInputRef.current?.click()}>
-                        <span>📥</span>
-                        <span className="menu-item-label">백업에서 복원</span>
-                        <span className="menu-arrow">↑</span>
-                    </button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept=".json"
-                        style={{ display: 'none' }}
-                        onChange={handleRestore}
-                    />
-
-                    <button className="menu-item danger" onClick={() => setShowResetConfirm(true)}>
-                        <span>🗑️</span>
-                        <span className="menu-item-label">전체 데이터 초기화</span>
-                        <span className="menu-arrow">⚠️</span>
+                        <span className="menu-item-label">추억함 리스트 메일로 내보내기</span>
+                        <span className="menu-arrow">›</span>
                     </button>
                 </div>
 
                 {/* 지원 */}
                 <div className="menu-group">
                     <h3 className="menu-title">지원</h3>
-
-                    <button className="menu-item" onClick={() => setShowHelp(!showHelp)}>
-                        <span>❓</span>
-                        <span className="menu-item-label">도움말</span>
-                        <span className="menu-arrow">{showHelp ? '▼' : '›'}</span>
-                    </button>
-
-                    {showHelp && (
-                        <div className="help-panel animate-scale-in">
-                            <div className="help-item">
-                                <strong>📸 물건 촬영</strong>
-                                <p>홈에서 카메라 버튼을 눌러 물건 이름을 입력하고 스미스와 대화하세요.</p>
-                            </div>
-                            <div className="help-item">
-                                <strong>🎯 미션</strong>
-                                <p>AI 추천 미션 또는 직접 미션을 설정하세요. 홈에서 '직접 추가' 버튼을 누르면 됩니다.</p>
-                            </div>
-                            <div className="help-item">
-                                <strong>📦 추억함</strong>
-                                <p>보내준 물건은 '추억함'에, 보류한 물건은 '보관함'에 저장됩니다.</p>
-                            </div>
-                            <div className="help-item">
-                                <strong>☁️ 백업</strong>
-                                <p>데이터는 기기에 저장됩니다. 설정에서 JSON 백업 후 다른 기기에서 복원하세요.</p>
-                            </div>
-                        </div>
-                    )}
 
                     <button className="menu-item" onClick={() => { window.open('mailto:support@thanq.app'); showToast('📧 메일 앱이 열립니다'); }}>
                         <span>📧</span>
@@ -406,21 +151,6 @@ export default function Settings() {
                     </button>
                 </div>
             </div>
-
-            {/* 초기화 확인 모달 */}
-            {showResetConfirm && (
-                <div className="modal-overlay" onClick={() => setShowResetConfirm(false)}>
-                    <div className="modal-box animate-scale-in" onClick={e => e.stopPropagation()}>
-                        <span className="modal-icon">⚠️</span>
-                        <h3>전체 데이터 초기화</h3>
-                        <p>모든 물건, 미션, 뱃지, 설정이 삭제됩니다.<br />이 작업은 되돌릴 수 없습니다.</p>
-                        <div className="modal-btns">
-                            <button className="modal-btn cancel" onClick={() => setShowResetConfirm(false)}>취소</button>
-                            <button className="modal-btn danger" onClick={handleReset}>초기화</button>
-                        </div>
-                    </div>
-                </div>
-            )}
 
             <p className="version-text">ThanQ v1.0.0 · Made with 🐱</p>
         </div>

@@ -1,5 +1,6 @@
 .chat-page {
-    padding-bottom: 20px;
+    /* 모바일 브라우저 하단 바 및 "지금 결정할래" 버튼 겹침 방지 */
+    padding-bottom: 120px;
 }
 
 .chat-input-section {
@@ -154,7 +155,7 @@
 
 /* 대화 화면 */
 .chat-active {
-    padding-bottom: 0;
+    padding-bottom: 120px;
 }
 
 .chat-item-header {

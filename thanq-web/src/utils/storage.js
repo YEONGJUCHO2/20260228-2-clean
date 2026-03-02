@@ -96,8 +96,8 @@ export function deleteMission(id) {
     return missions;
 }
 
-export function getMissionProgress(mission) {
-    const items = getFarewellItems();
+export function getMissionProgress(mission, customItems = null) {
+    const items = customItems || getFarewellItems();
     if (mission.category === '전체') return Math.min(items.length, mission.target);
     return Math.min(items.filter(i => i.category === mission.category).length, mission.target);
 }

@@ -5,12 +5,14 @@ import { checkApiLimit, incrementApiUsage, CATEGORIES, guessCategory } from '../
 import { addItemCloud } from '../utils/cloudStorage';
 import { analyzeImageWithAI } from '../utils/visionAI'; // 추가
 import { useAuth } from '../context/AuthContext';
+import PremiumModal from '../components/PremiumModal';
 import './Chat.css';
 
 export default function Chat() {
     const navigate = useNavigate();
     const location = useLocation();
     const { currentUser } = useAuth();
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
 
     // location.state에 imageCaptured가 있으면 분석 단계부터 시작
     const [step, setStep] = useState(location.state?.imageCaptured ? 'analyzing' : 'input'); // input | analyzing | chatting | deciding
@@ -38,7 +40,7 @@ export default function Chat() {
                 // API 사용량 체크
                 const limitCheck = checkApiLimit(currentUser);
                 if (!limitCheck.allowed) {
-                    alert(limitCheck.reason);
+                    setShowPremiumModal(true);
                     setStep('input');
                     return;
                 }
@@ -133,7 +135,7 @@ export default function Chat() {
         // 직접 입력하여 대화를 시작할 때도 API 한도를 확인합니다.
         const limitCheck = checkApiLimit(currentUser);
         if (!limitCheck.allowed) {
-            alert(limitCheck.reason);
+            setShowPremiumModal(true);
             return;
         }
 
@@ -259,7 +261,7 @@ export default function Chat() {
             }
         } catch (e) {
             if (e.message === 'FREE_LIMIT_REACHED') {
-                alert('보관함이 꽉 찼어요! (무료 10개 한도)\n🌟 ThanQ Pro로 업그레이드하면 무제한으로 보관할 수 있어요!');
+                setShowPremiumModal(true);
             } else {
                 alert('저장 중 오류가 발생했어요. 다시 시도해주세요.');
                 console.error(e);
@@ -289,6 +291,7 @@ export default function Chat() {
                         </div>
                     )}
                 </div>
+                <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
             </div>
         );
     }
@@ -359,6 +362,7 @@ export default function Chat() {
                         </button>
                     </div>
                 </div>
+                <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
             </div>
         );
     }
@@ -459,6 +463,7 @@ export default function Chat() {
                     </button>
                 </div>
             )}
+            <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
         </div>
     );
 }

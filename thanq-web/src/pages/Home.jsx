@@ -4,6 +4,10 @@ import { getMissions, getMissionProgress, getWishlistItems, addMission, deleteMi
 import { getItemsCloud, getRankingsCloud } from '../utils/cloudStorage';
 import { getSmithReaction as getReaction } from '../utils/smithAI';
 import { useAuth } from '../context/AuthContext';
+import { signInWithGoogle } from '../utils/firebase';
+import { getCategoryInfo, formatDate } from '../utils/category';
+import PremiumModal from '../components/PremiumModal';
+import GuideModal from '../components/GuideModal';
 import './Home.css';
 
 const AI_MISSIONS = [
@@ -32,6 +36,12 @@ export default function Home() {
     const [newMissionTarget, setNewMissionTarget] = useState('3');
     const [newMissionCategory, setNewMissionCategory] = useState('전체');
     const [isMissionExpanded, setIsMissionExpanded] = useState(false);
+    const [selectedItem, setSelectedItem] = useState(null);
+    const [showPremiumModal, setShowPremiumModal] = useState(false);
+    const [showGuideModal, setShowGuideModal] = useState(false);
+    const [isPro, setIsPro] = useState(() => {
+        try { return JSON.parse(localStorage.getItem('thanq_settings') || '{}').isPro || false; } catch { return false; }
+    });
 
     useEffect(() => {
         const loadRealData = async () => {
@@ -102,6 +112,14 @@ export default function Home() {
         setMissions(getMissions());
     };
 
+    const handleLogin = async () => {
+        try {
+            await signInWithGoogle();
+        } catch (error) {
+            console.error("로그인 실패:", error);
+        }
+    };
+
     const handleLogout = async () => {
         try {
             await logout();
@@ -115,17 +133,50 @@ export default function Home() {
 
     // 미션 완료/전체 수 계산
     const totalMissions = missions.length;
-    const completedMissions = missions.filter(m => getMissionProgress(m) >= m.target).length;
+    const completedMissions = missions.filter(m => getMissionProgress(m, farewellItems) >= m.target).length;
 
     return (
         <div className="page home-page">
             {/* 상단 앱 제목 및 로그인/로그아웃 버튼 */}
             <div className="home-top-header animate-fade-in">
-                <div style={{ flex: 1 }}></div>
-                <h1 className="home-app-title">ThanQ</h1>
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', paddingLeft: '8px' }}>
+                    {!needsLogin && (
+                        <button
+                            onClick={() => setShowPremiumModal(true)}
+                            style={{
+                                background: isPro ? 'linear-gradient(135deg, var(--gold, #FFD700), #ffc107)' : 'var(--bg-secondary)',
+                                color: isPro ? '#fff' : 'var(--text-secondary)',
+                                padding: '4px 10px',
+                                borderRadius: '12px',
+                                fontSize: '12px',
+                                fontWeight: '800',
+                                cursor: 'pointer',
+                                border: isPro ? 'none' : '1px solid var(--border-color)',
+                                boxShadow: isPro ? '0 2px 4px rgba(255, 193, 7, 0.3)' : 'none',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '4px'
+                            }}
+                        >
+                            {isPro ? '✨ PRO' : '무료 플랜'}
+                        </button>
+                    )}
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <h1 className="home-app-title" style={{ margin: 0, lineHeight: 1 }}>ThanQ</h1>
+                    <button
+                        onClick={() => setShowGuideModal(true)}
+                        style={{
+                            background: 'none', border: 'none', padding: '4px', marginTop: '2px', cursor: 'pointer',
+                            fontSize: '11px', fontWeight: 'bold', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '4px'
+                        }}
+                    >
+                        <span>💡</span> (사용 방법)
+                    </button>
+                </div>
                 <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end', gap: '8px', alignItems: 'center' }}>
                     {needsLogin ? (
-                        <button onClick={() => navigate('/login')} className="header-auth-btn login">로그인</button>
+                        <button onClick={handleLogin} className="header-auth-btn login">로그인</button>
                     ) : (
                         <button onClick={handleLogout} className="header-auth-btn logout">로그아웃</button>
                     )}
@@ -133,18 +184,21 @@ export default function Home() {
             </div>
 
             {/* 스미스 인사 (또는 사용자 프로필) */}
-            <div className="smith-greeting animate-fade-in-up">
+            <div className="smith-greeting animate-fade-in-up" style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
                 <div className="smith-avatar-home">
                     <img
-                        src={needsLogin ? "/smith-avatar.png" : (currentUser.photoURL || "/smith-avatar.png")}
+                        src={needsLogin ? "/smith-avatar.png" : (currentUser?.photoURL || "/smith-avatar.png")}
                         alt={needsLogin ? "스미스" : "사용자"}
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                     />
                 </div>
-                <div className="smith-bubble">
-                    <p className="smith-name" style={{ fontSize: '13px', color: needsLogin ? 'var(--coral)' : 'var(--text-primary)', marginBottom: needsLogin ? '2px' : '4px' }}>
-                        {needsLogin ? '스미스' : (currentUser.displayName || '사용자님')}
-                    </p>
+                <div className="smith-bubble" style={{ paddingRight: '80px', flex: 1 }}>
+                    <div className="smith-name" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: needsLogin ? '2px' : '4px' }}>
+                        <span style={{ fontSize: '13px', color: needsLogin ? 'var(--coral)' : 'var(--text-primary)', fontWeight: 'bold' }}>
+                            {needsLogin ? '스미스' : (currentUser?.displayName || '사용자님')}
+                        </span>
+                    </div>
+
                     {!needsLogin && (
                         <div style={{ marginBottom: '6px' }}>
                             <span style={{ fontSize: '10px', background: 'rgba(232, 131, 107, 0.1)', color: 'var(--coral)', padding: '2px 6px', borderRadius: '4px', fontWeight: 'bold' }}>
@@ -153,7 +207,28 @@ export default function Home() {
                         </div>
                     )}
                     <p className="smith-message">{reaction.message}</p>
-                    <p className="smith-sub">보내준 물건: <strong>{farewellItems.length}개</strong></p>
+                </div>
+
+                {/* 우측 보내준 물건 위젯 */}
+                <div style={{
+                    position: 'absolute',
+                    right: '16px',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    background: '#f4ece2',
+                    padding: '12px 16px',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    minWidth: '80px',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+                }}>
+                    <span style={{ fontSize: '22px', fontWeight: '800', color: '#e8836b', marginBottom: '4px' }}>
+                        {farewellItems.length}
+                    </span>
+                    <span style={{ fontSize: '11px', color: '#7a7065' }}>보내준 물건</span>
                 </div>
             </div>
 
@@ -273,7 +348,7 @@ export default function Home() {
                         {/* 미션 리스트 (최대 4개) */}
                         <div className="mission-list card">
                             {missions.slice(0, 4).map(mission => {
-                                const progress = getMissionProgress(mission);
+                                const progress = getMissionProgress(mission, farewellItems);
                                 const percent = Math.round((progress / mission.target) * 100);
                                 const done = progress >= mission.target;
                                 return (
@@ -321,9 +396,13 @@ export default function Home() {
                     <h2 className="section-title">📋 최근 활동</h2>
                     <div className="feed-scroll">
                         {recentItems.map(item => (
-                            <div key={item.id} className="feed-item">
+                            <div key={item.id} className="feed-item" onClick={() => setSelectedItem(item)} style={{ cursor: 'pointer' }}>
                                 <div className="feed-thumb" style={{ background: item.status === 'farewell' ? 'var(--coral-light)' : 'var(--soft-blue)' }}>
-                                    {item.status === 'farewell' ? '💨' : '📦'}
+                                    {item.imageData ? (
+                                        <img src={item.imageData} alt={item.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                                    ) : (
+                                        getCategoryInfo(item.category).icon
+                                    )}
                                 </div>
                                 <p className="feed-name">{item.name}</p>
                                 <span className={`feed-badge ${item.status}`}>
@@ -351,6 +430,56 @@ export default function Home() {
                     ))}
                 </div>
             </section>
+
+            {/* 상세 카드 모달 */}
+            {selectedItem && (
+                <div className="detail-overlay" onClick={() => setSelectedItem(null)}>
+                    <div className="detail-card animate-fade-in-up" onClick={(e) => e.stopPropagation()}>
+                        <button className="detail-close" onClick={() => setSelectedItem(null)}>✕</button>
+
+                        {selectedItem.imageData ? (
+                            <div className="detail-photo">
+                                <img src={selectedItem.imageData} alt={selectedItem.name} />
+                            </div>
+                        ) : (
+                            <div className="detail-photo detail-photo-emoji">
+                                <span>{getCategoryInfo(selectedItem.category).icon}</span>
+                            </div>
+                        )}
+
+                        <div className="detail-info">
+                            <h2 className="detail-name">{selectedItem.name}</h2>
+                            <div className="detail-meta">
+                                <span className="detail-tag">{getCategoryInfo(selectedItem.category).name}</span>
+                                <span className="detail-date">{formatDate(selectedItem.createdAt)}</span>
+                                <span className={`detail-status ${selectedItem.status}`}>
+                                    {selectedItem.status === 'farewell' ? '👋 보내줌' : '📌 보류 중'}
+                                </span>
+                            </div>
+
+                            {selectedItem.farewellMessage && (
+                                <div className="detail-section-box">
+                                    <p className="detail-section-label">💌 작별 메시지</p>
+                                    <p className="detail-farewell-msg">"{selectedItem.farewellMessage}"</p>
+                                </div>
+                            )}
+
+                            {selectedItem.chatSummary && (
+                                <div className="detail-section-box">
+                                    <p className="detail-section-label">🐱 스미스와의 대화</p>
+                                    {selectedItem.chatSummary.split(' | ').map((msg, i) => (
+                                        <p key={i} className="detail-chat-msg">"{msg}"</p>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* 공통 모달 영역 */}
+            <PremiumModal isOpen={showPremiumModal} onClose={() => setShowPremiumModal(false)} />
+            <GuideModal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)} />
         </div>
     );
 }

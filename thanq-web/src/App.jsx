@@ -7,7 +7,6 @@ import Farewell from './pages/Farewell';
 import Archive from './pages/Archive';
 import Stats from './pages/Stats';
 import Settings from './pages/Settings';
-import Login from './pages/Login';
 import { applyThemeOnLoad } from './utils/storage';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import './App.css';
@@ -22,12 +21,10 @@ function ProtectedRoute({ children }) {
 
 function MainLayout() {
   const location = useLocation();
-  const hideNav = location.pathname === '/login';
 
   return (
     <div className="app-container">
       <Routes>
-        <Route path="/login" element={<Login />} />
         <Route path="/" element={<ProtectedRoute><Home /></ProtectedRoute>} />
         <Route path="/chat" element={<ProtectedRoute><Chat /></ProtectedRoute>} />
         <Route path="/farewell" element={<ProtectedRoute><Farewell /></ProtectedRoute>} />
@@ -35,7 +32,7 @@ function MainLayout() {
         <Route path="/stats" element={<ProtectedRoute><Stats /></ProtectedRoute>} />
         <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
       </Routes>
-      {!hideNav && <BottomNav />}
+      <BottomNav />
     </div>
   );
 }

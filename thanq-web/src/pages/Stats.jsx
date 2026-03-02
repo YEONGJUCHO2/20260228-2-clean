@@ -10,6 +10,7 @@ export default function Stats() {
     const [rankings, setRankings] = useState([]);
     const [missions, setMissions] = useState([]);
     const [themes, setThemes] = useState([]);
+    const [farewellItems, setFarewellItems] = useState([]);
     const [weeklyReport, setWeeklyReport] = useState(null);
     const [reportLoading, setReportLoading] = useState(false);
     const allThemes = getAllThemes();
@@ -44,6 +45,7 @@ export default function Stats() {
                 categories,
                 wishlistCount: wishlists.length
             });
+            setFarewellItems(farewells);
 
             // 진짜 랭킹 불러오기
             const cloudRanks = await getRankingsCloud();
@@ -97,6 +99,21 @@ export default function Stats() {
         '의류': '의류', '책': '책', '전자기기': '전자기기',
         '소품': '소품', '추억': '추억', '주방용품': '주방용품', '기타': '기타',
     };
+
+    const getCategoryIcon = (cat) => {
+        const icons = {
+            'clothing': '👕', 'clothes': '👕', '의류': '👕',
+            'books': '📚', '책': '📚',
+            'electronics': '📱', '전자기기': '📱',
+            'accessories': '🧸', '소품': '🧸',
+            'memories': '💌', 'memory': '💌', '추억': '💌',
+            'kitchen': '🍳', '주방용품': '🍳',
+            'other': '📦', '기타': '📦'
+        };
+        // 영문 이름 혹은 한글 이름 모두 대응
+        return icons[cat] || '📦';
+    };
+
     const categoryColors = {
         '의류': '#E8836B', '책': '#7BA7CC', '전자기기': '#5ABAB7',
         '소품': '#D4A853', '추억': '#C084FC', '주방용품': '#F59E0B', '기타': '#A09890',
@@ -200,7 +217,7 @@ export default function Stats() {
             <section className="stats-section animate-fade-in-up" style={{ animationDelay: '0.25s' }}>
                 <h2 className="stats-section-title">🎯 미션 현황</h2>
                 {missions.map(mission => {
-                    const progress = getMissionProgress(mission);
+                    const progress = getMissionProgress(mission, farewellItems);
                     const percent = Math.min(Math.round((progress / mission.target) * 100), 100);
                     const done = progress >= mission.target;
                     return (
@@ -239,14 +256,14 @@ export default function Stats() {
                                     <span className="report-stat-label">작별한 물건</span>
                                 </div>
                                 <div className="report-stat-box">
-                                    <span className="report-stat-emoji">💭</span>
+                                    <span className="report-stat-emoji">📦</span>
                                     <span className="report-stat-num">{weeklyReport.wishlistCount}</span>
-                                    <span className="report-stat-label">보관함</span>
+                                    <span className="report-stat-label">추억함</span>
                                 </div>
                                 {weeklyReport.topCategory && (
                                     <div className="report-stat-box">
-                                        <span className="report-stat-emoji">🏷️</span>
-                                        <span className="report-stat-num" style={{ fontSize: '14px' }}>{weeklyReport.topCategory}</span>
+                                        <span className="report-stat-emoji">{getCategoryIcon(weeklyReport.topCategory)}</span>
+                                        <span className="report-stat-num" style={{ fontSize: '14px' }}>{getCatName(weeklyReport.topCategory) || '기타'}</span>
                                         <span className="report-stat-label">많이 정리</span>
                                     </div>
                                 )}

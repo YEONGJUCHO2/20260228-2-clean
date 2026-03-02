@@ -6,7 +6,7 @@ import {
 import { db } from './firebase';
 
 // 일반 유저 보관함 최대 개수
-export const FREE_USER_ITEM_LIMIT = 10;
+export const FREE_USER_ITEM_LIMIT = 30;
 
 // Pro 여부 확인 (Settings localStorage 기반 - 추후 Firestore로 이전)
 export function isProUser() {
