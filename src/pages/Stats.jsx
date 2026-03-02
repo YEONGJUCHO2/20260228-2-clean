@@ -235,6 +235,16 @@ export default function Stats() {
                 })}
             </section>
 
+            {/* 구글 애드센스 (이번 주 TOP 랭커 하단) */}
+            <div style={{ margin: '32px 0', textAlign: 'center', background: 'var(--bg-secondary)', padding: '16px', borderRadius: '12px', minHeight: '100px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <ins className="adsbygoogle"
+                    style={{ display: 'block', width: '100%' }}
+                    data-ad-client="ca-pub-6124782194336305"
+                    data-ad-slot="auto"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"></ins>
+            </div>
+
             {/* 주간 스미스 리포트 */}
             <section className="stats-section animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
                 <h2 className="stats-section-title">📊 이번 주 스미스 리포트</h2>
@@ -242,7 +252,7 @@ export default function Stats() {
                     {reportLoading ? (
                         <div className="report-loading">
                             <div className="report-loading-dot"></div>
-                            <p>스미스가 이번 주를 분석하갌어...</p>
+                            <p>스미스가 이번 주를 분석하고 있어...</p>
                         </div>
                     ) : weeklyReport ? (
                         <>

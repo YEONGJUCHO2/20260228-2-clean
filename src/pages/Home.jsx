@@ -210,8 +210,7 @@ export default function Home() {
                 <div style={{
                     position: 'absolute',
                     right: '16px',
-                    top: '50%',
-                    transform: 'translateY(-50%)',
+                    bottom: '16px',
                     background: '#f4ece2',
                     padding: '8px 10px',
                     borderRadius: '12px',

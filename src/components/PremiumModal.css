@@ -103,13 +103,13 @@
 .price-amount {
     font-size: 36px;
     font-weight: 900;
-    color: #e8836b;
+    color: #111;
     letter-spacing: -1px;
 }
 
 .price-period {
     font-size: 16px;
-    color: var(--text-muted);
+    color: #333;
     font-weight: 600;
     margin-left: 6px;
 }
