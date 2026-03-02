@@ -1,5 +1,3 @@
-import { GoogleGenerativeAI } from "@google/generative-ai";
-
 // ThanQ - 스미스 AI 대화 로직 (Mock + Gemini Flash 연동 준비)
 
 const getApiKey = () => {
@@ -87,6 +85,7 @@ export async function getNextResponseAsync(conversation, userLastChoiceText = ''
         const apiKey = getApiKey();
         if (!apiKey) throw new Error("API Key missing");
 
+        const { GoogleGenerativeAI } = await import("@google/generative-ai");
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({
             model: "gemini-2.5-flash",
@@ -234,6 +233,7 @@ export async function generateWeeklyReport(items) {
         const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
         if (!apiKey) throw new Error('No API Key');
 
+        const { GoogleGenerativeAI } = await import("@google/generative-ai");
         const genAI = new GoogleGenerativeAI(apiKey);
         const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
 

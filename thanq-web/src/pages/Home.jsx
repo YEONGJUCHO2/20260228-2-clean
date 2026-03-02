@@ -6,6 +6,19 @@ import { getSmithReaction as getReaction } from '../utils/smithAI';
 import { useAuth } from '../context/AuthContext';
 import './Home.css';
 
+const AI_MISSIONS = [
+    { title: "안 입는 옷 3벌 비우기", category: "의류", target: 3 },
+    { title: "유통기한 지난 소스 버리기", category: "주방용품", target: 2 },
+    { title: "안 보는 책 1권 기부/판매", category: "책", target: 1 },
+    { title: "서랍장 잡동사니 정리하기", category: "기타", target: 5 },
+    { title: "1년 안 쓴 전자기기 처분", category: "전자기기", target: 1 }
+];
+
+function RankAvatar({ src }) {
+    if (src === '🐱') return <span>🐱</span>;
+    return <img src={src} alt="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />;
+}
+
 export default function Home() {
     const navigate = useNavigate();
     const { currentUser, logout } = useAuth();
@@ -14,40 +27,45 @@ export default function Home() {
     const [wishlistItems, setWishlistItems] = useState([]);
     const [rankings, setRankings] = useState([]);
     const [showAddMission, setShowAddMission] = useState(false);
-    const [addMissionMode, setAddMissionMode] = useState(null); // null, 'manual', 'ai'
+    const [addMissionMode, setAddMissionMode] = useState(null);
     const [newMissionTitle, setNewMissionTitle] = useState('');
     const [newMissionTarget, setNewMissionTarget] = useState('3');
     const [newMissionCategory, setNewMissionCategory] = useState('전체');
-    const [isMissionExpanded, setIsMissionExpanded] = useState(false); // 미션 슬롯 열림 상태
+    const [isMissionExpanded, setIsMissionExpanded] = useState(false);
 
     useEffect(() => {
         const loadRealData = async () => {
             setMissions(getMissions());
 
-            // 실시간 보유 수 및 랭킹 데이터 가져오기
-            const items = await getItemsCloud(currentUser);
-            const farewells = items.filter(i => i.status === 'farewell' || !i.status);
-            const wishlists = items.filter(i => i.status === 'wishlist');
+            const [items, cloudRanks] = await Promise.all([
+                getItemsCloud(currentUser),
+                getRankingsCloud()
+            ]);
+
+            const farewells = [];
+            const wishlists = [];
+            for (const i of items) {
+                if (i.status === 'farewell' || !i.status) farewells.push(i);
+                else if (i.status === 'wishlist') wishlists.push(i);
+            }
 
             setFarewellItems(farewells);
             setWishlistItems(wishlists);
 
-            const cloudRanks = await getRankingsCloud();
             let formattedRanks = cloudRanks.map((r, i) => ({
                 rank: i + 1,
                 name: r.name,
                 count: r.count,
-                avatar: r.avatar === '🐱' ? '🐱' : <img src={r.avatar} alt="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} />,
+                avatar: r.avatar || '🐱',
                 isMe: currentUser && r.id === currentUser.uid
             }));
 
-            // 내가 없을 경우 예외처리
             if (currentUser && currentUser.uid && !formattedRanks.some(r => r.isMe) && farewells.length > 0) {
                 formattedRanks.push({
                     rank: '-',
                     name: currentUser.displayName || '나',
                     count: farewells.length,
-                    avatar: currentUser.photoURL ? <img src={currentUser.photoURL} alt="avatar" style={{ width: '32px', height: '32px', borderRadius: '50%' }} /> : '🐱',
+                    avatar: currentUser.photoURL || '🐱',
                     isMe: true
                 });
             }
@@ -72,14 +90,7 @@ export default function Home() {
     };
 
     const handleAiRecommendation = () => {
-        const aiMissions = [
-            { title: "안 입는 옷 3벌 비우기", category: "의류", target: 3 },
-            { title: "유통기한 지난 소스 버리기", category: "주방용품", target: 2 },
-            { title: "안 보는 책 1권 기부/판매", category: "책", target: 1 },
-            { title: "서랍장 잡동사니 정리하기", category: "기타", target: 5 },
-            { title: "1년 안 쓴 전자기기 처분", category: "전자기기", target: 1 }
-        ];
-        const randomMission = aiMissions[Math.floor(Math.random() * aiMissions.length)];
+        const randomMission = AI_MISSIONS[Math.floor(Math.random() * AI_MISSIONS.length)];
         addMission(randomMission.title, randomMission.target.toString(), randomMission.category, 'ai');
         setMissions(getMissions());
         setShowAddMission(false);
@@ -333,7 +344,7 @@ export default function Home() {
                             <span className="rank-num">
                                 {r.rank === 1 ? '🥇' : r.rank === 2 ? '🥈' : r.rank === 3 ? '🥉' : (r.rank === '-' ? '⭐' : `#${r.rank}`)}
                             </span>
-                            <span className="rank-avatar">{r.avatar}</span>
+                            <span className="rank-avatar"><RankAvatar src={r.avatar} /></span>
                             <span className="rank-name">{r.name}</span>
                             <span className="rank-count">{r.count}개</span>
                         </div>

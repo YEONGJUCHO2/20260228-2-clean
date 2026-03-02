@@ -1,6 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import html2canvas from 'html2canvas';
 import { isProUser } from '../utils/cloudStorage';
 import './Farewell.css';
 
@@ -44,16 +43,17 @@ export default function Farewell() {
         }
     };
 
-    // 파티클 생성 - 테마에 따라 재생성하기 위해 useMemo로 감싸거나 바로 생성 (여기선 상태에 따라 재랜더링되므로 바로 생성)
-    const particleIcons = getThemeParticles();
-    const particles = Array.from({ length: 30 }, (_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        delay: Math.random() * 2,
-        duration: 2 + Math.random() * 3,
-        size: 4 + Math.random() * 8,
-        type: particleIcons[Math.floor(Math.random() * particleIcons.length)],
-    }));
+    const particles = useMemo(() => {
+        const icons = getThemeParticles();
+        return Array.from({ length: 30 }, (_, i) => ({
+            id: i,
+            left: Math.random() * 100,
+            delay: Math.random() * 2,
+            duration: 2 + Math.random() * 3,
+            size: 4 + Math.random() * 8,
+            type: icons[Math.floor(Math.random() * icons.length)],
+        }));
+    }, [theme]);
 
     const getCategoryIcon = (cat) => {
         const icons = { clothing: '👕', books: '📚', electronics: '📱', accessories: '🧸', memories: '💌', kitchen: '🍳' };
@@ -65,7 +65,7 @@ export default function Farewell() {
         if (!cardRef.current || sharing) return;
         setSharing(true);
         try {
-            // 테마별 배경색 직접 지정하여 캔버스에 그리기 (html2canvas가 css 배경을 정확히 못잡는 경우 대비)
+            const { default: html2canvas } = await import('html2canvas');
             const bgColors = {
                 default: '#1A1A2E',
                 aurora: '#0f2027',

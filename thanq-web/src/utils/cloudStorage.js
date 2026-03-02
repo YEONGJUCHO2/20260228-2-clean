@@ -128,10 +128,7 @@ export async function deleteItemCloud(user, itemId) {
 
 // ===== 복수 아이템 삭제 =====
 export async function deleteItemsCloud(user, itemIds) {
-    for (const id of itemIds) {
-        await deleteItemCloud(user, id);
-    }
-    // rankings updated inside deleteItemCloud already, but if we optimize, we could do it once.
+    await Promise.all(itemIds.map(id => deleteItemCloud(user, id)));
 }
 
 // ===== 아이템 업데이트 =====
