@@ -149,12 +149,7 @@ export default function Farewell() {
                     <p className="farewell-sub">{item.farewellMessage}</p>
                 </div>
 
-                {/* ThanQ 워터마크 */}
-                {phase >= 2 && (
-                    <div className="farewell-watermark">
-                        🐱 ThanQ
-                    </div>
-                )}
+
             </div>
 
             {/* 완료 버튼 (테마 선택 추가) */}
@@ -167,18 +162,9 @@ export default function Farewell() {
                         <button className={`theme-btn ${theme === 'butterfly' ? 'active' : ''}`} onClick={() => setTheme('butterfly')}>🦋 나비</button>
                     </div>
                 )}
-                <button
-                    className="farewell-share-btn"
-                    onClick={handleShareCard}
-                    disabled={sharing}
-                >
-                    {sharing ? '저장 중...' : '📸 카드로 저장하기'}
-                </button>
-                <button className="farewell-done-btn" onClick={() => navigate('/')}>
-                    홈으로 돌아가기
-                </button>
+
                 <button className="farewell-archive-btn" onClick={() => navigate('/archive')}>
-                    추억 보관함 보기 📦
+                    추억함 보기 📦
                 </button>
             </div>
         </div>

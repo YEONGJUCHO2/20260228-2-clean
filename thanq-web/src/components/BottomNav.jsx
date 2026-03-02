@@ -11,7 +11,7 @@ export default function BottomNav() {
             </NavLink>
             <NavLink to="/archive" className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}>
                 <span className="nav-icon">📦</span>
-                <span className="nav-label">보관함</span>
+                <span className="nav-label">추억함</span>
             </NavLink>
             <div className="nav-camera-wrapper">
                 <input

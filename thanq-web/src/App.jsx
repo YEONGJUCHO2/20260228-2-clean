@@ -41,7 +41,16 @@ function MainLayout() {
 }
 
 function App() {
-  useEffect(() => { applyThemeOnLoad(); }, []);
+  useEffect(() => {
+    applyThemeOnLoad();
+
+    // 카카오 인앱 브라우저 감지 및 외부 브라우저 전환 시도
+    const userAgent = navigator.userAgent.toLowerCase();
+    if (userAgent.match(/kakaotalk/i)) {
+      alert('원활한 사용을 위해 기본 브라우저(Safari/Chrome)로 이동합니다.');
+      location.href = 'kakaotalk://web/openExternal?url=' + encodeURIComponent(location.href);
+    }
+  }, []);
   return (
     <AuthProvider>
       <BrowserRouter>

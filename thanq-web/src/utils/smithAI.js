@@ -240,7 +240,7 @@ export async function generateWeeklyReport(items) {
         const itemNames = farewellItems.slice(0, 5).map(i => i.name).join(', ');
         const prompt = `당신은 '스미스'라는 친근하고 따뜻한 스팀펑크 고양이 요정입니다.
 사용자가 이번 주에 ${totalSent}개의 물건(${itemNames || '여러 가지'})을 작별했습니다.
-위시리스트에는 ${wishlistItems.length}개가 있어요.
+보관함에는 ${wishlistItems.length}개가 있어요.
 ${topCat ? `가장 많이 정리한 카테고리는 '${topCat[0]}'입니다.` : ''}
 
 스미스의 말투로 이번 주 정리 활동에 대한 감성적이고 따뜻한 한 줄 코멘트를 작성해주세요.

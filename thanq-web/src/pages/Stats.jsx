@@ -241,7 +241,7 @@ export default function Stats() {
                                 <div className="report-stat-box">
                                     <span className="report-stat-emoji">💭</span>
                                     <span className="report-stat-num">{weeklyReport.wishlistCount}</span>
-                                    <span className="report-stat-label">위시리스트</span>
+                                    <span className="report-stat-label">보관함</span>
                                 </div>
                                 {weeklyReport.topCategory && (
                                     <div className="report-stat-box">
@@ -262,18 +262,7 @@ export default function Stats() {
                 </div>
             </section>
 
-            {/* ThanQ Pro 배너 */}
-            <div className="pro-banner animate-fade-in-up" style={{ animationDelay: '0.4s' }}>
-                <span className="pro-badge">PRO ACCESS</span>
-                <h3 className="pro-title">ThanQ Pro</h3>
-                <ul className="pro-features">
-                    <li>✅ 무제한 AI 상담 채팅</li>
-                    <li>✅ 클라우드 무제한 저장</li>
-                    <li>✅ 프리미엄 작별 테마</li>
-                </ul>
-                <button className="pro-subscribe-btn">$2.99/월로 시작하기</button>
-                <p className="pro-note">언제든 취소 가능. 7일 무료 체험.</p>
-            </div>
+
         </div>
     );
 }

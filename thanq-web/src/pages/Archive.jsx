@@ -102,23 +102,12 @@ export default function Archive() {
 
     const currentItems = tab === 'archive' ? farewellItems : wishlistItems;
 
-    // 저장 한도 UI
+    // 미니 용량 표시 (무료 사용자용)
     const StorageBar = () => {
         if (!storageInfo.limit) return null; // Pro 또는 게스트는 미표시
-        const pct = Math.min((storageInfo.count / storageInfo.limit) * 100, 100);
-        const nearLimit = storageInfo.count >= storageInfo.limit - 2;
         return (
-            <div className={`storage-bar-wrap animate-fade-in ${nearLimit ? 'near-limit' : ''}`}>
-                <div className="storage-bar-info">
-                    <span>☁️ 보관함</span>
-                    <span className="storage-bar-count">
-                        {storageInfo.count} / {storageInfo.limit}개
-                        {nearLimit && <span className="storage-bar-warn"> · Pro로 무제한 이용 🌟</span>}
-                    </span>
-                </div>
-                <div className="storage-bar-track">
-                    <div className="storage-bar-fill" style={{ width: `${pct}%`, background: nearLimit ? 'var(--coral)' : 'var(--teal)' }} />
-                </div>
+            <div style={{ textAlign: 'center', fontSize: '12px', color: 'var(--text-muted)', marginBottom: '20px', fontWeight: 'bold', letterSpacing: '1px' }}>
+                용량 [{storageInfo.count} / {storageInfo.limit}]
             </div>
         );
     };
@@ -135,20 +124,19 @@ export default function Archive() {
                 </button>
             </header>
 
-            {/* 저장 한도 바 */}
-            <StorageBar />
-
-            {/* 탭 */}
             <div className="archive-tab-bar animate-fade-in">
                 <button className={`archive-tab ${tab === 'archive' ? 'active' : ''}`} onClick={() => { setTab('archive'); cancelSelectMode(); }}>
-                    보관함
+                    추억함
                     {tab === 'archive' && <span className="tab-dot"></span>}
                 </button>
                 <button className={`archive-tab ${tab === 'wishlist' ? 'active' : ''}`} onClick={() => { setTab('wishlist'); cancelSelectMode(); }}>
-                    위시리스트
+                    보관함
                     {tab === 'wishlist' && <span className="tab-dot"></span>}
                 </button>
             </div>
+
+            {/* 저장 한도 미니 표시 */}
+            <StorageBar />
 
             {/* 요약 텍스트 */}
             {(tab === 'archive' || tab === 'wishlist') && (
@@ -169,23 +157,7 @@ export default function Archive() {
                 </div>
             )}
 
-            {/* 뱃지 가로 목록 */}
-            {(tab === 'archive' || tab === 'wishlist') && (
-                <div className="badges-row animate-fade-in-up">
-                    {allBadges.slice(0, 4).map((badge, idx) => {
-                        const earned = badges.includes(badge.id);
-                        const colors = ['bg-orange', 'bg-yellow', 'bg-green', 'bg-gray'];
-                        const colorClass = earned ? colors[idx % 4] : 'bg-gray';
-                        const displayIcon = getCustomBadgeIcon(badge.id, badge.icon);
-                        return (
-                            <div key={badge.id} className={`badge-mini ${earned ? 'earned' : 'locked'}`}>
-                                <span className={`badge-mini-icon ${colorClass}`}>{earned ? displayIcon : '🔒'}</span>
-                                <span className="badge-mini-name">{badge.name}</span>
-                            </div>
-                        );
-                    })}
-                </div>
-            )}
+
 
             {/* 포토 그리드 */}
             {(tab === 'archive' || tab === 'wishlist') && (

@@ -116,13 +116,7 @@ export default function Settings() {
         showToast(`🌍 언어: ${labels[nextLang]}`);
     };
 
-    // 알림 토글
-    const toggleNotif = (key) => {
-        const notifs = { ...settings.notifications, [key]: !settings.notifications[key] };
-        const next = updateSettings({ notifications: notifs });
-        setSettings(next);
-        showToast(notifs[key] ? `🔔 ${key === 'daily' ? '매일 알림' : key === 'mission' ? '미션 알림' : '주간 리포트'} 켜짐` : `🔕 알림 꺼짐`);
-    };
+
 
     // 데이터 백업 (JSON 다운로드)
     const handleBackup = () => {
@@ -255,13 +249,7 @@ export default function Settings() {
                                 <p className="feature-desc">🔥 불꽃놀이, 🦋 나비, 🌌 오로라</p>
                             </div>
                         </div>
-                        <div className="pro-feature">
-                            <span className="pro-icon">📊</span>
-                            <div>
-                                <p className="feature-title">주간 스미스 리포트</p>
-                                <p className="feature-desc">감정 흐름 분석 + AI 맞춤 추천</p>
-                            </div>
-                        </div>
+
                     </div>
 
                     <div className="pro-pricing">
@@ -330,34 +318,7 @@ export default function Settings() {
                     </button>
                 </div>
 
-                {/* 알림 설정 */}
-                <div className="menu-group">
-                    <h3 className="menu-title">🔔 알림</h3>
 
-                    <button className="menu-item" onClick={() => toggleNotif('daily')}>
-                        <span>📅</span>
-                        <span className="menu-item-label">매일 정리 리마인더</span>
-                        <div className={`toggle-switch ${settings.notifications.daily ? 'on' : ''}`}>
-                            <div className="toggle-knob"></div>
-                        </div>
-                    </button>
-
-                    <button className="menu-item" onClick={() => toggleNotif('mission')}>
-                        <span>🎯</span>
-                        <span className="menu-item-label">미션 달성 알림</span>
-                        <div className={`toggle-switch ${settings.notifications.mission ? 'on' : ''}`}>
-                            <div className="toggle-knob"></div>
-                        </div>
-                    </button>
-
-                    <button className="menu-item" onClick={() => toggleNotif('weekly')}>
-                        <span>📊</span>
-                        <span className="menu-item-label">주간 리포트</span>
-                        <div className={`toggle-switch ${settings.notifications.weekly ? 'on' : ''}`}>
-                            <div className="toggle-knob"></div>
-                        </div>
-                    </button>
-                </div>
 
                 {/* 데이터 관리 */}
                 <div className="menu-group">
@@ -416,8 +377,8 @@ export default function Settings() {
                                 <p>AI 추천 미션 또는 직접 미션을 설정하세요. 홈에서 '직접 추가' 버튼을 누르면 됩니다.</p>
                             </div>
                             <div className="help-item">
-                                <strong>📦 보관함</strong>
-                                <p>보내준 물건은 '추억 보관함'에, 보류한 물건은 '위시리스트'에 저장됩니다.</p>
+                                <strong>📦 추억함</strong>
+                                <p>보내준 물건은 '추억함'에, 보류한 물건은 '보관함'에 저장됩니다.</p>
                             </div>
                             <div className="help-item">
                                 <strong>☁️ 백업</strong>
