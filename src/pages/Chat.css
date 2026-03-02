@@ -1,0 +1,437 @@
+.chat-page {
+    /* 모바일 브라우저 하단 바 및 "지금 결정할래" 버튼 겹침 방지 */
+    padding-bottom: 120px;
+}
+
+.chat-input-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding-top: var(--space-xl);
+}
+
+.smith-chat-avatar {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    overflow: hidden;
+    margin-bottom: var(--space-md);
+    animation: float 3s ease-in-out infinite;
+    box-shadow: 0 8px 30px rgba(255, 204, 128, 0.4);
+    border: 3px solid #FFCC80;
+}
+
+.smith-intro-bubble {
+    text-align: center;
+    margin-bottom: var(--space-lg);
+    padding: 14px 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    position: relative;
+}
+
+.smith-intro-bubble::before {
+    content: '';
+    position: absolute;
+    top: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 16px;
+    height: 16px;
+    background: var(--bg-card);
+    border-radius: 3px;
+    transform: translateX(-50%) rotate(45deg);
+}
+
+.smith-intro-bubble p {
+    font-size: 14px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+}
+
+.smith-intro-bubble strong {
+    color: var(--coral);
+}
+
+.input-card {
+    width: 100%;
+}
+
+.input-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.item-input {
+    width: 100%;
+    padding: 14px 16px;
+    border: 2px solid var(--beige);
+    border-radius: var(--radius-md);
+    font-size: 15px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    transition: border-color 0.2s;
+}
+
+.item-input:focus {
+    border-color: var(--coral);
+    background: white;
+}
+
+.auto-guess-label {
+    font-size: 12px;
+    color: var(--coral);
+    margin-top: 8px;
+    padding: 6px 12px;
+    background: rgba(232, 131, 107, 0.08);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 4px;
+}
+
+.category-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+    margin-bottom: var(--space-lg);
+}
+
+.category-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 6px;
+    background: var(--bg-secondary);
+    border: 2px solid transparent;
+    border-radius: var(--radius-md);
+    font-size: 10px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    transition: all 0.2s;
+}
+
+.category-btn span:first-child {
+    font-size: 20px;
+}
+
+.category-btn.active {
+    border-color: var(--coral);
+    background: rgba(232, 131, 107, 0.08);
+    color: var(--coral);
+    font-weight: 700;
+}
+
+.start-chat-btn {
+    width: 100%;
+    padding: 16px;
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+    color: white;
+    font-size: 16px;
+    font-weight: 700;
+    border-radius: var(--radius-lg);
+    transition: all 0.3s;
+    box-shadow: var(--shadow-glow);
+}
+
+.start-chat-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(232, 131, 107, 0.4);
+}
+
+.start-chat-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* 대화 화면 */
+.chat-active {
+    padding-bottom: 120px;
+}
+
+.chat-item-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-md);
+}
+
+.chat-item-icon {
+    font-size: 28px;
+    width: 48px;
+    height: 48px;
+    background: var(--bg-secondary);
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.chat-item-name {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.chat-item-cat {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.chat-item-sparkle {
+    margin-left: auto;
+    font-size: 20px;
+    animation: sparkle 2s infinite;
+}
+
+/* 메시지들 */
+.chat-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding-bottom: var(--space-md);
+    min-height: 200px;
+    max-height: 45vh;
+}
+
+.message {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.message.user {
+    flex-direction: row-reverse;
+}
+
+.msg-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+    border: 2px solid #FFCC80;
+}
+
+.msg-bubble {
+    max-width: 75%;
+    padding: 12px 16px;
+    border-radius: var(--radius-lg);
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.msg-bubble.smith {
+    background: var(--bg-card);
+    color: var(--text-primary);
+    border-bottom-left-radius: 4px;
+    box-shadow: var(--shadow-sm);
+}
+
+.msg-bubble.user {
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+    color: white;
+    border-bottom-right-radius: 4px;
+}
+
+/* 타이핑 애니메이션 */
+.msg-bubble.typing {
+    display: flex;
+    gap: 4px;
+    padding: 14px 20px;
+}
+
+.dot {
+    width: 8px;
+    height: 8px;
+    background: var(--text-muted);
+    border-radius: 50%;
+    animation: pulse 1.2s ease-in-out infinite;
+}
+
+.dot:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dot:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+/* 선택지 카드 */
+.choices-container {
+    padding: var(--space-md) 0;
+}
+
+.choices-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: var(--space-md);
+}
+
+.choice-card {
+    padding: 14px 12px;
+    background: var(--bg-card);
+    border: 2px solid var(--beige);
+    border-radius: var(--radius-lg);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-primary);
+    line-height: 1.4;
+    text-align: left;
+    transition: all 0.2s;
+}
+
+.choice-card:hover:not(:disabled) {
+    border-color: var(--coral);
+    background: rgba(232, 131, 107, 0.04);
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+}
+
+.choice-card.selected {
+    border-color: var(--coral);
+    background: rgba(232, 131, 107, 0.1);
+    color: var(--coral);
+    font-weight: 700;
+}
+
+.choice-card:disabled:not(.selected) {
+    opacity: 0.5;
+}
+
+/* 직접 입력 영역 */
+.chat-input-bar {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.chat-input-wrapper {
+    display: flex;
+    gap: 8px;
+    background: var(--bg-card);
+    border: 2px solid var(--beige);
+    border-radius: 16px;
+    padding: 4px;
+    box-shadow: var(--shadow-sm);
+    transition: border-color 0.2s;
+}
+
+.chat-input-wrapper:focus-within {
+    border-color: var(--coral);
+}
+
+.chat-text-input {
+    flex: 1;
+    padding: 12px 14px;
+    border: none;
+    background: transparent;
+    color: var(--text-primary);
+    font-size: 14px;
+    outline: none;
+}
+
+.chat-text-input::placeholder {
+    color: var(--text-muted);
+    font-size: 13px;
+}
+
+.chat-send-btn {
+    padding: 10px 20px;
+    border-radius: 12px;
+    border: none;
+    background: var(--beige);
+    color: var(--text-muted);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: default;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.chat-send-btn.active {
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+    color: white;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(232, 131, 107, 0.3);
+}
+
+.chat-send-btn.active:hover {
+    transform: scale(1.05);
+}
+
+/* 지금 결정할래 버튼 (인라인) */
+.skip-btn-inline {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 8px 16px;
+    background: rgba(123, 167, 204, 0.1);
+    color: var(--soft-blue);
+    border: 1.5px solid rgba(123, 167, 204, 0.3);
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    align-self: flex-end;
+}
+
+.skip-btn-inline:hover {
+    background: rgba(123, 167, 204, 0.2);
+    border-color: var(--soft-blue);
+    transform: translateY(-1px);
+}
+
+/* 결정 버튼 */
+.decision-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: var(--space-md) 0 var(--space-xl);
+}
+
+.decision-btn {
+    padding: 18px;
+    border-radius: var(--radius-xl);
+    font-size: 16px;
+    font-weight: 700;
+    transition: all 0.3s;
+}
+
+.decision-btn.farewell {
+    background: linear-gradient(135deg, var(--coral), var(--coral-dark));
+    color: white;
+    box-shadow: var(--shadow-glow);
+}
+
+.decision-btn.farewell:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(232, 131, 107, 0.4);
+}
+
+.decision-btn.keep {
+    background: var(--bg-card);
+    color: var(--soft-blue);
+    border: 2px solid var(--soft-blue);
+}
+
+.decision-btn.keep:hover {
+    background: rgba(123, 167, 204, 0.08);
+    transform: translateY(-2px);
+}
