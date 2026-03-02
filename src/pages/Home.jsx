@@ -189,9 +189,9 @@ export default function Home() {
                         style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }}
                     />
                 </div>
-                <div className="smith-bubble" style={{ paddingRight: '80px', flex: 1 }}>
+                <div className="smith-bubble" style={{ paddingRight: '70px', flex: 1, overflow: 'hidden' }}>
                     <div className="smith-name" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: needsLogin ? '2px' : '4px' }}>
-                        <span style={{ fontSize: '13px', color: needsLogin ? 'var(--coral)' : 'var(--text-primary)', fontWeight: 'bold' }}>
+                        <span style={{ fontSize: '13px', color: needsLogin ? 'var(--coral)' : 'var(--text-primary)', fontWeight: 'bold', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', display: 'block' }}>
                             {needsLogin ? '스미스' : (currentUser?.displayName || '사용자님')}
                         </span>
                     </div>
@@ -213,19 +213,19 @@ export default function Home() {
                     top: '50%',
                     transform: 'translateY(-50%)',
                     background: '#f4ece2',
-                    padding: '12px 16px',
-                    borderRadius: '16px',
+                    padding: '8px 10px',
+                    borderRadius: '12px',
                     display: 'flex',
                     flexDirection: 'column',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    minWidth: '80px',
+                    minWidth: '64px',
                     boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
                 }}>
-                    <span style={{ fontSize: '22px', fontWeight: '800', color: '#e8836b', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '18px', fontWeight: '800', color: '#e8836b', marginBottom: '2px', lineHeight: '1' }}>
                         {farewellItems.length}
                     </span>
-                    <span style={{ fontSize: '11px', color: '#7a7065' }}>보내준 물건</span>
+                    <span style={{ fontSize: '10px', color: '#7a7065', whiteSpace: 'nowrap' }}>보내준 물건</span>
                 </div>
             </div>
 
