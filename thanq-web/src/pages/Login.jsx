@@ -24,9 +24,10 @@ export default function Login() {
         }
     }, []);
 
-    // 로그인 완료 감지 시 홈으로 이동 (비동기 타이밍 문제 해결의 핵심 요소)
+    // 정식 유저(Google 로그인 등)의 경우 로그인 페이지 접속 시 자동으로 홈으로 이동
+    // 게스트 유저는 스스로 '로그인' 버튼을 눌러 이곳에 올 수 있도록 튕겨내지 않음
     useEffect(() => {
-        if (currentUser) {
+        if (currentUser && !currentUser.isAnonymous) {
             navigate('/');
         }
     }, [currentUser, navigate]);
@@ -34,7 +35,7 @@ export default function Login() {
     const handleGoogleLogin = async () => {
         setIsLoading(true);
         const result = await signInWithGoogle();
-        // 내부 navigate 삭제 -> useEffect가 처리
+        // 성공 시 onAuthStateChanged에 의해 currentUser가 업데이트되어 위의 useEffect가 navigate를 처리
         if (!result.success) {
             alert('구글 로그인 실패: ' + result.error);
             setIsLoading(false);
@@ -43,14 +44,15 @@ export default function Login() {
 
     const handleGuestLogin = async () => {
         setIsLoading(true);
-        sessionStorage.setItem('guest_active', 'true'); // 로그인 시도 전 미리 설정하여 AuthContext에서의 강제 로그아웃 방지
+        sessionStorage.setItem('guest_active', 'true'); // 로그인 시도 전 미리 설정하여 강제 로그아웃 방지
         const result = await signInGuest();
-        if (!result.success) {
+        if (result.success) {
+            navigate('/'); // 게스트는 클릭 성공 시 직접 이동
+        } else {
             sessionStorage.removeItem('guest_active');
             alert('게스트 로그인 실패: ' + result.error);
             setIsLoading(false);
         }
-        // 버튼을 누른 후 navigate 호출부를 삭제하여 레이스 컨디션 차단
     };
 
     const btnStyle = {
