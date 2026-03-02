@@ -59,12 +59,16 @@ export default function Login() {
 
     const handleGuestLogin = async () => {
         setIsLoading(true);
+        sessionStorage.setItem('guest_active', 'true'); // 로그인 시도 전 미리 설정하여 AuthContext에서의 강제 로그아웃 방지
         const result = await signInGuest();
         if (result.success) {
-            sessionStorage.setItem('guest_active', 'true');
             navigate('/');
         }
-        else { alert('게스트 로그인 실패: ' + result.error); setIsLoading(false); }
+        else {
+            sessionStorage.removeItem('guest_active');
+            alert('게스트 로그인 실패: ' + result.error);
+            setIsLoading(false);
+        }
     };
 
     const handleAppleLogin = async () => {
